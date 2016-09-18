@@ -1,0 +1,9 @@
+ext.project = ['group': 'de.ocarthon.ssg', 'version': '0.1']
+
+
+allprojects {
+    group = project.group
+    version = project.version
+
+    apply plugin: 'java'
+}
