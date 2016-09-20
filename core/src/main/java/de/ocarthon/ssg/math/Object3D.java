@@ -13,6 +13,10 @@ public class Object3D {
         facets = new ArrayList<>(facetCount);
     }
 
+    public Object3D() {
+        facets = new ArrayList<>(32);
+    }
+
     public void centerObject() {
         Vector avg = new Vector(0, 0, 0);
         double zMin = Double.MAX_VALUE;
