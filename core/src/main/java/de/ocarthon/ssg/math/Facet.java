@@ -1,18 +1,16 @@
 package de.ocarthon.ssg.math;
 
-import com.sun.istack.internal.NotNull;
-
 public class Facet {
     public Vector p1;
     public Vector p2;
     public Vector p3;
     public Vector n;
 
-    public Facet(@NotNull Vector p1, @NotNull Vector p2, @NotNull Vector p3) {
+    public Facet(Vector p1, Vector p2, Vector p3) {
         this(p1, p2, p3, null);
     }
 
-    public Facet(@NotNull Vector p1, @NotNull Vector p2, @NotNull Vector p3, Vector n) {
+    public Facet(Vector p1, Vector p2, Vector p3, Vector n) {
         this.p1 = p1;
         this.p2 = p2;
         this.p3 = p3;

@@ -1,0 +1,3 @@
+dependencies {
+    compile group: 'com.sun.istack', name: 'istack-commons-runtime', version: '3.0'
+}

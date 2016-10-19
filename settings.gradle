@@ -1,2 +1,2 @@
-include 'core', 'formats'
+include 'core', 'formats', 'curaengine'
 
