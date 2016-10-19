@@ -1,0 +1,1 @@
+protoc --java_out=curaengine/src/main/java Cura.proto

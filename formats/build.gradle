@@ -1,4 +1,4 @@
 
 dependencies {
-    project(":core")
+    compile project(":core")
 }

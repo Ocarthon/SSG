@@ -5,18 +5,13 @@ import de.ocarthon.ssg.math.Object3D;
 import de.ocarthon.ssg.math.Vector;
 
 import java.io.BufferedReader;
-import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
-import java.util.Formatter;
-import java.util.Locale;
 
 public class STLASCIIFormat {
 
-    public static Object3D parseFile(InputStream in) throws Exception {
+    public static Object3D readObject(InputStream in) throws Exception {
         BufferedReader reader = new BufferedReader(new InputStreamReader(in));
 
         reader.readLine(); // Header
