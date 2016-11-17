@@ -13,7 +13,7 @@ import java.util.List;
 
 public class WavefrontFormat {
 
-    public Object3D readObject(@NotNull InputStream in) throws Exception {
+    public static Object3D readObject(@NotNull InputStream in) throws Exception {
         BufferedReader reader = new BufferedReader(new InputStreamReader(in));
 
         Object3D obj = new Object3D();
