@@ -25,11 +25,6 @@ public class GCLayer {
     public GCLayer(double offset, double layerHeight, Extruder extruder) {
         this.offset = offset;
         this.layerHeight = layerHeight;
-
-        /*if (!extruder.activated) {
-            throw new IllegalStateException("Extruder is not activated!");
-        }*/
-
         this.extruder = extruder;
     }
 
@@ -92,11 +87,27 @@ public class GCLayer {
     }
 
     public void writeGCode(OutputStream out, Printer printer) throws IOException {
-        calculateValues(printer);
-        out.write("G92 E0\n".getBytes("UTF-8"));
+        double e = calculateValues(printer);
+
+        boolean firstG0 = false;
 
         for (GCInstruction instruction : getInstructions()) {
             out.write((instruction.convertToGCode(printer, getExtruder())+"\n").getBytes("UTF-8"));
+
+            if (!firstG0 && instruction instanceof GCInstructions.Move) {
+                firstG0 = true;
+
+                if (printer.retractionEnabled()) {
+                    out.write(("G92 E-"+printer.retractionAmount+"\n").getBytes());
+                    out.write("G1 F1500 E0\n".getBytes());
+                } else {
+                    out.write("G92 E0".getBytes());
+                }
+            }
+        }
+
+        if (printer.retractionEnabled()) {
+            out.write(("G1 F1500 E"+ (e-printer.retractionAmount)+"\n").getBytes());
         }
     }
 

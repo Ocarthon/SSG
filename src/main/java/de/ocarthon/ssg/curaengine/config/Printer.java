@@ -53,10 +53,10 @@ public class Printer {
     public float supportSpeed = 60;
 
     @CuraSetting(key = "retraction_enable")
-    public boolean retraction = false;
+    public boolean retraction = true;
 
     @CuraSetting(key = "retraction_amount")
-    public float retractionAmount = 0;
+    public float retractionAmount = 6;
 
     @CuraSetting(key = "layer_height")
     public float layerHeight = 0.2F;
@@ -80,6 +80,10 @@ public class Printer {
 
     public Extruder getExtruder(int i) {
         return extruders.get(i);
+    }
+
+    public boolean retractionEnabled() {
+        return retraction && retractionAmount != 0;
     }
 }
 
