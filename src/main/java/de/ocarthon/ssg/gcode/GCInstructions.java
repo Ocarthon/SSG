@@ -5,26 +5,26 @@ import de.ocarthon.ssg.curaengine.config.Printer;
 
 public class GCInstructions {
 
-    public static class Move implements GCInstruction {
+    public static class G0 implements GCInstruction {
         double x;
         double y;
         double z;
         double f = -1;
 
-        public Move(double x, double y, double z, double f) {
+        public G0(double x, double y, double z, double f) {
             this.x = x;
             this.y = y;
             this.z = z;
             this.f = f;
         }
 
-        public Move(double x, double y, double z) {
+        public G0(double x, double y, double z) {
             this.x = x;
             this.y = y;
             this.z = z;
         }
 
-        public Move(double x, double y) {
+        public G0(double x, double y) {
             this.x = x;
             this.y = y;
         }
@@ -35,24 +35,41 @@ public class GCInstructions {
         }
     }
 
-    public static class Print extends Move {
+    public static class G1 extends G0 {
         double e;
 
-        public Print(double x, double y, double z) {
+        public G1(double x, double y, double z) {
             super(x, y, z);
         }
 
-        public Print(double x, double y, double z, double f) {
+        public G1(double x, double y, double z, double f) {
             super(x, y, z, f);
         }
 
-        public Print(double x, double y) {
+        public G1(double x, double y) {
             super(x, y);
         }
 
         @Override
         public String convertToGCode(Printer printer, Extruder extruder) {
             return buildGCode("G1", new char[]{'F','X','Y','Z','E'}, f, x + printer.width / 2 + extruder.nozzleOffsetX, y + printer.depth / 2 + extruder.nozzleOffsetY, z, e);
+        }
+    }
+
+    public static class G2 extends G1 {
+        double i;
+        double j;
+
+        @Override
+        public String convertToGCode(Printer printer, Extruder extruder) {
+            return buildGCode("G2", new char[]{'F', 'I', 'J', 'E'}, f, i, j, e);
+        }
+
+        public G2(double i, double j) {
+            super(0, 0);
+
+            this.i = i;
+            this.j = j;
         }
     }
 

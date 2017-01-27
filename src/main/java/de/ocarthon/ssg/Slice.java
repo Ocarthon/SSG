@@ -44,8 +44,10 @@ public class Slice {
         });
 
         Printer printer = new Printer();
+        printer.retraction = true;
+        printer.retractionAmount = 3;
         printer.supportAngle = 45F;
-        printer.useSupport = true;
+        printer.useSupport = false;
         Extruder extruder = new Extruder();
         printer.addExtruder(extruder);
 
@@ -53,10 +55,11 @@ public class Slice {
     }
 
     public static void writeSliceProgress(SliceProgress p) {
-        File file = new File("Bogen_support.gcode");
+        File file = new File("Bogen.gcode");
         try {
             FileOutputStream fos = new FileOutputStream(file);
             for (Cura.GCodeLayer layer : p.getLayers()) {
+                fos.write(";LAYER\n".getBytes());
                 fos.write(layer.toByteArray());
             }
             fos.flush();

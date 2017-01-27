@@ -9,7 +9,7 @@ public class Printer {
     @CuraSetting(key="machine_start_gcode")
     String machineStartGCode = "";
 
-    public String startGcode = "G28 ;Home\nG1 Z15.0 F6000 ;Move the platform down 15mm\n;Prime the extruder\nG92 E0\nG1 F200 E3\nG92 E0";
+    public String startGcode = "G28 ;Home\nG1 Z15.0 F6000 ;G0 the platform down 15mm\n;Prime the extruder\nG92 E0\nG1 F200 E3\nG92 E0";
 
     @CuraSetting(key="machine_end_gcode")
     String machineStopGCode = "";
@@ -53,10 +53,10 @@ public class Printer {
     public float supportSpeed = 60;
 
     @CuraSetting(key = "retraction_enable")
-    public boolean retraction = false;
+    public boolean retraction = true;
 
     @CuraSetting(key = "retraction_amount")
-    public float retractionAmount = 0;
+    public float retractionAmount = 6;
 
     @CuraSetting(key = "layer_height")
     public float layerHeight = 0.2F;
@@ -73,6 +73,8 @@ public class Printer {
     @CuraSetting(key = "cool_fan_full_layer")
     public int fanAtLayer = 1;
 
+    public boolean supportG2 = true;
+
     public void addExtruder(Extruder ext) {
         extruders.add(ext);
         extruderCount++;
@@ -80,6 +82,10 @@ public class Printer {
 
     public Extruder getExtruder(int i) {
         return extruders.get(i);
+    }
+
+    public boolean retractionEnabled() {
+        return retraction && retractionAmount != 0;
     }
 }
 
