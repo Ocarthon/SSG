@@ -44,6 +44,8 @@ public class Slice {
         });
 
         Printer printer = new Printer();
+        printer.retraction = true;
+        printer.retractionAmount = 3;
         printer.supportAngle = 45F;
         printer.useSupport = false;
         Extruder extruder = new Extruder();
@@ -57,6 +59,7 @@ public class Slice {
         try {
             FileOutputStream fos = new FileOutputStream(file);
             for (Cura.GCodeLayer layer : p.getLayers()) {
+                fos.write(";LAYER\n".getBytes());
                 fos.write(layer.toByteArray());
             }
             fos.flush();

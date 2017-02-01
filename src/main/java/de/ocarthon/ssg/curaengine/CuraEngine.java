@@ -105,6 +105,10 @@ public class CuraEngine {
         this.listeners.remove(listener);
     }
 
+    public void reset() {
+        socket.reset();
+    }
+
     private void setupArcusSocket() {
         this.socket = new ArcusSocket();
 

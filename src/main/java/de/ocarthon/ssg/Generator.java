@@ -200,14 +200,14 @@ public class Generator {
 
             // Stamm
             for (int i = 0; i < pillarWidth; i++) {
-                SimpleStructures.generateCircle(layer, m.x, m.y, pillarRadius - i * extruder.nozzleSize, circleCorners);
+                GCStructures.generateCircle(printer, layer, m.x, m.y, pillarRadius - i * extruder.nozzleSize, circleCorners);
             }
 
             // Basis
             if (height <= basisHeight) {
                 int basisCount = (int) Math.floor((basisHeight - height) / (tanB * extruder.nozzleSize));
                 for (int i = 0; i < basisCount; i++) {
-                    SimpleStructures.generateCircle(layer, m.x, m.y, pillarRadius + i * extruder.nozzleSize, circleCorners);
+                    GCStructures.generateCircle(printer, layer, m.x, m.y, pillarRadius + i * extruder.nozzleSize, circleCorners);
                 }
             }
 
@@ -250,9 +250,9 @@ public class Generator {
                 }
 
                 if (i == 0) {
-                    layer.add(new GCInstructions.Move(p.x, p.y, p.z));
+                    layer.add(new GCInstructions.G0(p.x, p.y, p.z));
                 } else {
-                    layer.add(new GCInstructions.Print(p.x, p.y, p.z));
+                    layer.add(new GCInstructions.G1(p.x, p.y, p.z));
                 }
             }
 
@@ -312,11 +312,11 @@ public class Generator {
                     }
 
                     if (i % 2 == 0) {
-                        layer.add(new GCInstructions.Move(xmi, y));
-                        layer.add(new GCInstructions.Print(xma, y));
+                        layer.add(new GCInstructions.G0(xmi, y));
+                        layer.add(new GCInstructions.G1(xma, y));
                     } else {
-                        layer.add(new GCInstructions.Move(xma, y));
-                        layer.add(new GCInstructions.Print(xmi, y));
+                        layer.add(new GCInstructions.G0(xma, y));
+                        layer.add(new GCInstructions.G1(xmi, y));
                     }
                 }
             }

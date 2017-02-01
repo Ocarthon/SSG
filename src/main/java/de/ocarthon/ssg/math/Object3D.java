@@ -7,7 +7,7 @@ public class Object3D {
     public List<Facet> facets;
     public Vector translation = new Vector(0, 0, 0);
     public Vector rotation = new Vector(0, 0, 0);
-    public double scalar = 1;
+    public double scale = 1;
     public int extruderNr = 0;
 
     public Object3D(int facetCount) {
@@ -43,7 +43,7 @@ public class Object3D {
     public byte[] writeObject() {
         // Facet -> 3 Vectors -> 3 Floats -> 4 Bytes (32 bit)
         byte[] vertices = new byte[facets.size()*3*3*4];
-        Matrix rot = Matrix.rotationMatrix(rotation.x, rotation.y, rotation.z).multiply(Matrix.scaleMatrix(scalar));
+        Matrix rot = Matrix.rotationMatrix(rotation.x, rotation.y, rotation.z).multiply(Matrix.scaleMatrix(scale));
         for (int i = 0; i < facets.size(); i++) {
             Facet f = rot.transform(facets.get(i));
             writeVector(vertices, i * 3*3*4, f.p1);
@@ -74,7 +74,7 @@ public class Object3D {
                 "facets=" + facets +
                 ", translation=" + translation +
                 ", rotation=" + rotation +
-                ", scalar=" + scalar +
+                ", scale=" + scale +
                 '}';
     }
 }

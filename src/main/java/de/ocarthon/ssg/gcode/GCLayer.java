@@ -5,7 +5,6 @@ import de.ocarthon.ssg.curaengine.config.Printer;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -45,30 +44,37 @@ public class GCLayer {
     }
 
     public double calculateValues(Printer printer, double eOffset) {
-        GCInstructions.Move last = null;
-        GCInstructions.Move current;
+        GCInstructions.G0 last = null;
+        GCInstructions.G0 current;
         double e = eOffset;
 
         for (GCInstruction instruction : instructions) {
-            if (!(instruction instanceof GCInstructions.Move)) {
+            if (!(instruction instanceof GCInstructions.G0)) {
                 continue;
             }
 
-            current = ((GCInstructions.Move) instruction);
+            current = ((GCInstructions.G0) instruction);
 
             // Apply extruder offset
-            //current.x += extruder.xOffset;
-            //current.y += extruder.yOffset;
+            //current.x += extruder.nozzleOffsetX;
+            //current.y += extruder.nozzleOffsetY;
 
             if (last == null) {
                 current.z = offset;
             }
 
-            if (current instanceof GCInstructions.Print) {
+            if (current instanceof GCInstructions.G1) {
                 if (last != null) {
-                    double distance = Math.sqrt(Math.pow(last.x - current.x, 2)+Math.pow(last.y - current.y,2));
-                    e += (distance * layerHeight * extruder.nozzleSize * 4 * extruder.materialFlow)/(100 * Math.PI * Math.pow(extruder.materialDiameter, 2));
-                    ((GCInstructions.Print) current).e = e;
+                    if (current instanceof GCInstructions.G2) {
+                        GCInstructions.G2 g2 = ((GCInstructions.G2) current);
+                        double radius = Math.sqrt(Math.pow(g2.i, 2)+Math.pow(g2.j,2));
+                        e += (8 * layerHeight * extruder.nozzleSize * radius * extruder.materialFlow) / (100 * Math.pow(extruder.materialDiameter, 2));
+                    } else {
+                        double distance = Math.sqrt(Math.pow(last.x - current.x, 2)+Math.pow(last.y - current.y,2));
+                        e += (distance * layerHeight * extruder.nozzleSize * 4 * extruder.materialFlow)/(100 * Math.PI * Math.pow(extruder.materialDiameter, 2));
+                    }
+
+                    ((GCInstructions.G1) current).e = e;
                 }
 
                 if (current.f == -1) {
@@ -89,9 +95,20 @@ public class GCLayer {
     public void writeGCode(OutputStream out, Printer printer) throws IOException {
         double e = calculateValues(printer);
 
-        boolean firstG0 = false;
+        boolean firstG1 = false;
 
         for (GCInstruction instruction : getInstructions()) {
+            if (!firstG1 && instruction instanceof GCInstructions.G1) {
+                firstG1 = true;
+
+                if (printer.retractionEnabled()) {
+                    out.write(("G92 E-"+printer.retractionAmount+"\n").getBytes());
+                    out.write("G1 F1500 E0\n".getBytes());
+                } else {
+                    out.write("G92 E0\n".getBytes());
+                }
+            }
+
             out.write((instruction.convertToGCode(printer, getExtruder())+"\n").getBytes("UTF-8"));
 
             if (!firstG0 && instruction instanceof GCInstructions.Move) {

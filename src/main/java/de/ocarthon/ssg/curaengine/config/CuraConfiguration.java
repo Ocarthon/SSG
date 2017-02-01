@@ -15,7 +15,7 @@ public class CuraConfiguration {
         Cura.ObjectList.Builder objList = Cura.ObjectList.newBuilder();
 
         for (Object3D obj : objects) {
-            objList.addObjects(Cura.Object.newBuilder().setVertices(ByteString.copyFrom(writeObject(obj)))
+            objList.addObjects(Cura.Object.newBuilder().setVertices(ByteString.copyFrom(obj.writeObject()))
                     .addSettings(createSetting("mesh_position_x", String.valueOf(obj.translation.x)))
                     .addSettings(createSetting("mesh_position_y", String.valueOf(obj.translation.y)))
                     .addSettings(createSetting("mesh_position_z", String.valueOf(obj.translation.z))));
@@ -77,35 +77,5 @@ public class CuraConfiguration {
 
     private static Cura.Setting createSetting(String key, String value) {
         return Cura.Setting.newBuilder().setName(key).setValue(ByteString.copyFromUtf8(value)).build();
-    }
-
-
-
-    public static byte[] writeObject(Object3D obj) {
-        // Facet -> 3 Vectors -> 3 Floats -> 4 Bytes (32 bit)
-        byte[] vertices = new byte[obj.facets.size()*3*3*4];
-        Matrix rot = Matrix.rotationMatrix(obj.rotation.x, obj.rotation.y, obj.rotation.z).multiply(Matrix.scaleMatrix(obj.scalar));
-        for (int i = 0; i < obj.facets.size(); i++) {
-            Facet f = rot.transform(obj.facets.get(i));
-            writeVector(vertices, i * 3*3*4, f.p1);
-            writeVector(vertices, i * 3*3*4 + 12, f.p2);
-            writeVector(vertices, i * 3*3*4 + 24, f.p3);
-        }
-
-        return vertices;
-    }
-
-    private static void writeVector(byte[] data, int o, Vector v) {
-        writeFloat(data, o, (float) v.x);
-        writeFloat(data, o + 4, (float) v.y);
-        writeFloat(data, o + 8, (float) v.z);
-    }
-
-    private static void writeFloat(byte[] data, int o, float f) {
-        int fi = Float.floatToIntBits(f);
-        data[o + 3] = (byte) ((fi >> 24) & 0xFF);
-        data[o + 2] = (byte) ((fi >> 16) & 0xFF);
-        data[o + 1] = (byte) ((fi >> 8) & 0xFF);
-        data[o] = (byte) (fi & 0xFF);
     }
 }

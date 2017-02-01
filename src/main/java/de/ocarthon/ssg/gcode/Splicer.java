@@ -32,13 +32,13 @@ public class Splicer {
     }
 
     public static void sliceAndSplice(Object3D object3D, GCObject obj, double supportMinHeight, Printer printer, File file) throws IOException, InterruptedException {
-        final SliceProgress[] sliceMain = new SliceProgress[1];
+        final SliceProgress[] sliceResult = new SliceProgress[1];
         CuraEngine ce1 = new CuraEngine(7777);
         ce1.addListener(new CuraEngineListener() {
             @Override
             public void onSliceStart(SliceProgress p) {
                 System.out.println("START");
-                sliceMain[0] = p;
+                sliceResult[0] = p;
             }
 
             @Override
@@ -57,45 +57,22 @@ public class Splicer {
             }
         });
         ce1.slice(printer, object3D);
-        while (sliceMain[0] == null || sliceMain[0].getProgress() != 1 || ce1.isProcessRunning()) {
+        while (sliceResult[0] == null || sliceResult[0].getProgress() != 1 || ce1.isProcessRunning()) {
             Thread.sleep(1000);
         }
 
-        final SliceProgress[] sliceWSup = new SliceProgress[1];
-        CuraEngine ce2 = new CuraEngine(7777);
-        ce2.addListener(new CuraEngineListener() {
-            @Override
-            public void onSliceStart(SliceProgress p) {
-                System.out.println("START");
-                sliceWSup[0] = p;
-            }
+        SliceProgress sliceMain = sliceResult[0];
+        sliceResult[0] = null;
 
-            @Override
-            public void onProgressUpdate(SliceProgress p) {
-                System.out.println(p.getProgress());
-            }
-
-            @Override
-            public void onError(SliceProgress p, Error e) {
-                System.out.println(e.getErrorMessage());
-            }
-
-            @Override
-            public void onSliceFinished(SliceProgress p) {
-                System.out.println("FINISHED");
-            }
-        });
+        ce1.reset();
         printer.useSupport = true;
-        ce2.slice(printer, object3D);
+        ce1.slice(printer, object3D);
         printer.useSupport = false;
-        while (sliceWSup[0] == null || sliceWSup[0].getProgress() != 1) {
+        while (sliceResult[0] == null || sliceResult[0].getProgress() != 1) {
             Thread.sleep(1000);
         }
 
-
-        write(sliceWSup[0], new File("sup.gcode"));
-
-        splice(sliceMain[0], sliceWSup[0], supportMinHeight, obj, printer, file);
+        splice(sliceMain, sliceResult[0], supportMinHeight, obj, printer, file);
     }
 
     public static void splice(SliceProgress sliceMain, SliceProgress sliceWSup, double supportMinHeight, GCObject obj, Printer printer, File file) throws IOException {
@@ -155,7 +132,7 @@ public class Splicer {
                     }
 
                     supportLines.add(lines[i]);
-                    supportLines.add("G92 E" + (e + (retraction ? printer.retractionAmount : 0)));
+                    supportLines.add("G92 E" + e);
                     supportLines.add(lines[i-1] + " Z" + z);
 
                     continue;
@@ -177,16 +154,18 @@ public class Splicer {
         Formatter formatter = new Formatter(fos, "UTF-8", Locale.ENGLISH);
 
         // Start GCode
-        formatter.format("%s%n", printer.startGcode);
+        fos.write((printer.startGcode + "\n").getBytes());
 
         LinkedList<Cura.GCodeLayer> layers = slice.getLayers();
         double lastE = 0;
 
         int objLayer = 0;
+        int layNr = 0;
 
         boolean firstLayer = true;
 
         for (Iterator<Cura.GCodeLayer> iterator = layers.iterator(); iterator.hasNext(); ) {
+            layNr++;
             Cura.GCodeLayer layer = iterator.next();
 
             // Current layer split into lines
@@ -218,12 +197,104 @@ public class Splicer {
 
                 if (!endsWithRetraction(lines, printer)) {
                     e -= printer.retractionAmount;
-                    formatter.format("G1 F1500 E%.5f%n", e);
+                    fos.write(("G1 F1500 E" + e + "\n").getBytes());
                 }
 
                 lastE = e;
 
                 continue;
+            }
+
+            while (obj.layerCount() > objLayer && obj.getLayer(objLayer).getOffset() <= z) {
+                GCLayer gcLayer = obj.getLayer(objLayer);
+                gcLayer.calculateValues(printer);
+
+                fos.write("; GC_LAYER\n".getBytes());
+                gcLayer.writeGCode(fos, printer);
+                objLayer++;
+            }
+
+            if (printer.retractionEnabled()) {
+                int j = 0;
+                int end = 0;
+
+                if (!startsWithRetraction(lines, printer)) {
+                    boolean retract = true;
+                    while (!lines[j].startsWith("G1")) {
+                        fos.write((lines[j++]+"\n").getBytes());
+
+                        if (j >= lines.length) {
+                            retract = false;
+                            break;
+                        }
+                    }
+
+                    if (retract) {
+                        fos.write(("G92 E" + (lastE - printer.retractionAmount) + "\n").getBytes());
+                        fos.write(("G1 F1500 E" + lastE + "\n").getBytes());
+
+                        fos.write(lines[j++].getBytes());
+                    }
+                }
+
+                if (!endsWithRetraction(lines, printer)) {
+                    end = lines.length - 1;
+                    while (!lines[end].startsWith("G1")) {
+                        end--;
+
+                        if (end < 0) {
+                            break;
+                        }
+                    }
+
+                    if (end < 0) {
+                        for (int l = j; l < lines.length; l++) {
+                            fos.write((lines[l] + "\n").getBytes());
+                        }
+                    } else {
+                        for (int l = j; l <= end; l++) {
+                            fos.write((lines[l] + "\n").getBytes());
+                        }
+
+                        fos.write("G92 E0\n".getBytes());
+                        fos.write(("G1 F1400 E-" + printer.retractionAmount).getBytes());
+
+                        for (int l = end + 1; l < lines.length; l++) {
+                            fos.write((lines[l] + "\n").getBytes());
+                        }
+                    }
+                } else {
+                    for (int l = j; l < lines.length; l++) {
+                        fos.write((lines[l] + "\n").getBytes());
+                    }
+                }
+            } else {
+                fos.write(("G92 E" + lastE + "\n").getBytes("UTF-8"));
+                fos.write(layer.getData().toByteArray());
+
+            }
+
+            lastE = e;
+        }
+
+/*        for (int i = 0; i < layers.size(); i++) {
+            Cura.GCodeLayer layer = layers.get(i);
+            String[] lines = layer.getData().toString("UTF-8").split("\n");
+
+            double z = -1;
+            for (String line : lines) {
+                z = readDouble(Z_PATTERN, line);
+                if (z != -1) {
+                    break;
+                }
+            }
+
+            double e = -1;
+            for (int j = lines.length - 1; j > 0; j--) {
+                e = readDouble(E_PATTERN, lines[j]);
+                if (e != -1) {
+                    break;
+                }
             }
 
             while (obj.layerCount() > objLayer && obj.getLayer(objLayer).getOffset() <= z) {
