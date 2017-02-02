@@ -177,8 +177,9 @@ public class Test {
         }
 
         for (FacetGroup fg : facetGroups) {
+            fg.removeDoubles();
             fg.calculateCorners();
-            Vector m = fg.findCenterOfCorners();
+            /*Vector m = fg.findCenterOfCorners();
             fg.corners.sort(new FacetGroup.PolarVecComp(m));
             double maxCornerAngle = Math.toRadians(40);
             ArrayList<Vector> newCorners = new ArrayList<>();
@@ -203,7 +204,7 @@ public class Test {
                 Vector corner = fg.corners.get(i);
                 Vector mc = new Vector(corner.x - m.x, corner.y - m.y, 0).norm();
                 points.add(m.copy().add(mc.copy().scale(5)));
-            }
+            }*/
         }
 
 

@@ -34,36 +34,59 @@ public class FacetGroup {
         facet.color = this.color;
     }
 
-    public void calculateCorners() {
-        HashMap<Vector, Integer> counts = new HashMap<>();
-        for (int i = 0; i < facets.size(); i++) {
-            Facet f1 = facets.get(i);
-
-            if (counts.containsKey(f1.p1)) {
-                int k = counts.get(f1.p1);
-                counts.put(f1.p1, ++k);
-            } else {
-                counts.put(f1.p1, 1);
-            }
-
-            if (counts.containsKey(f1.p2)) {
-                int k = counts.get(f1.p2);
-                counts.put(f1.p2, ++k);
-            } else {
-                counts.put(f1.p2, 1);
-            }
-
-            if (counts.containsKey(f1.p3)) {
-                int k = counts.get(f1.p3);
-                counts.put(f1.p3, ++k);
-            } else {
-                counts.put(f1.p3, 1);
+    public void removeDoubles() {
+        HashSet<Facet> set = new HashSet<>();
+        for (Facet f : facets) {
+            if (!set.contains(f)) {
+                set.add(f);
             }
         }
 
-        for (Vector v : counts.keySet()) {
-            if (counts.get(v) <= 2) {
-                corners.add(v);
+        facets.clear();
+
+        for (Facet aSet : set) {
+            facets.add(aSet);
+        }
+    }
+
+    public void calculateCorners() {
+        HashMap<VectorPair, Integer> counts = new HashMap<>();
+        for (Facet f : facets) {
+            VectorPair vp = new VectorPair(f.p1, f.p2);
+            if (counts.containsKey(vp)) {
+                int k = counts.get(vp);
+                counts.put(vp, ++k);
+            } else {
+                counts.put(vp, 1);
+            }
+
+            vp = new VectorPair(f.p1, f.p3);
+            if (counts.containsKey(vp)) {
+                int k = counts.get(vp);
+                counts.put(vp, ++k);
+            } else {
+                counts.put(vp, 1);
+            }
+
+            vp = new VectorPair(f.p2, f.p3);
+            if (counts.containsKey(vp)) {
+                int k = counts.get(vp);
+                counts.put(vp, ++k);
+            } else {
+                counts.put(vp, 1);
+            }
+        }
+
+        for (VectorPair vp : counts.keySet()) {
+            if (counts.get(vp) == 1) {
+                if (!corners.contains(vp.v1)) {
+                    corners.add(vp.v1);
+                }
+
+                if (!corners.contains(vp.v2)) {
+                    corners.add(vp.v2);
+                }
+
             }
         }
     }
@@ -88,35 +111,12 @@ public class FacetGroup {
         return min;
     }
 
-    public Vector findSupportBaseVector(List<Facet> facets) {
-        Vector center = findCenter();
-        double height = 0;
-        for (Facet f : facets) {
-            if (this.facets.contains(f)) {
-                continue;
-            }
-
-            Vector b = MathUtil.barycentricCoordinates(f, center);
-            if (b.x >= 0 && b.x <= 1 && b.y >= 0 && b.y <= 1 && b.z >= 0 && b.z <= 1) {
-                double tHeight = b.x * f.p1.z + b.y * f.p2.z + b.z * f.p3.z;
-                //System.out.println("tHeight " + (b.x+b.y+b.z) +" " +tHeight + f);
-                if (tHeight < center.z && tHeight > height) {
-                    height = tHeight;
-                }
-            }
-        }
-
-        center.z = height;
-
-        return center;
-    }
-
     public Vector findCenterOfCorners() {
         if (corners.size() == 0) {
             calculateCorners();
         }
 
-        double x = 0;
+        /*double x = 0;
         double y = 0;
         double z = 0;
 
@@ -126,7 +126,8 @@ public class FacetGroup {
             z += v.z;
         }
 
-        return new Vector(x / corners.size(), y / corners.size(), z / corners.size());
+        return new Vector(x / corners.size(), y / corners.size(), z / corners.size());*/
+        return Centroid.calculateCentroid(corners);
     }
 
     public Vector findCenter() {

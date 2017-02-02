@@ -86,6 +86,14 @@ public class Vector {
         return Math.acos(a / b);
     }
 
+    public static double dst2(Vector v1, Vector v2) {
+        return Math.pow(v1.x - v2.x, 2) + Math.pow(v1.y - v2.y, 2) + Math.pow(v1.z - v2.z, 2);
+    }
+
+    public static double dst(Vector v1, Vector v2) {
+        return Math.sqrt(Math.pow(v1.x - v2.x, 2) + Math.pow(v1.y - v2.y, 2) + Math.pow(v1.z - v2.z, 2));
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

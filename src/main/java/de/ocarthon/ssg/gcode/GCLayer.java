@@ -110,17 +110,6 @@ public class GCLayer {
             }
 
             out.write((instruction.convertToGCode(printer, getExtruder())+"\n").getBytes("UTF-8"));
-
-            if (!firstG0 && instruction instanceof GCInstructions.Move) {
-                firstG0 = true;
-
-                if (printer.retractionEnabled()) {
-                    out.write(("G92 E-"+printer.retractionAmount+"\n").getBytes());
-                    out.write("G1 F1500 E0\n".getBytes());
-                } else {
-                    out.write("G92 E0".getBytes());
-                }
-            }
         }
 
         if (printer.retractionEnabled()) {
