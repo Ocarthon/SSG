@@ -30,7 +30,7 @@ public class Object3D {
             zMin = Math.min(zMin, temp);
         }
 
-        avg.scale(1d/(facets.size() * 3));
+        avg.mult(1d/(facets.size() * 3));
 
         double finalZMin = zMin;
         facets.forEach(f -> {
@@ -74,7 +74,7 @@ public class Object3D {
                 "facets=" + facets +
                 ", translation=" + translation +
                 ", rotation=" + rotation +
-                ", scale=" + scale +
+                ", mult=" + scale +
                 '}';
     }
 }

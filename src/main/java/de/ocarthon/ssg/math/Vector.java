@@ -44,8 +44,12 @@ public class Vector {
         return sub(vec.x, vec.y, vec.z);
     }
 
-    public Vector scale(double scalar) {
+    public Vector mult(double scalar) {
         return set(this.x * scalar, this.y * scalar, this.z * scalar);
+    }
+
+    public double dot(Vector vec) {
+        return this.x * vec.x + this.y * vec.y + this.z * vec.z;
     }
 
     public double length() {
@@ -94,6 +98,14 @@ public class Vector {
         return Math.sqrt(Math.pow(v1.x - v2.x, 2) + Math.pow(v1.y - v2.y, 2) + Math.pow(v1.z - v2.z, 2));
     }
 
+    public static Vector add(Vector v1, Vector v2) {
+        return new Vector(v1.x + v2.x, v1.y + v2.y, v1.z + v2.z);
+    }
+
+    public static Vector sub(Vector v1, Vector v2) {
+        return new Vector(v1.x - v2.x, v1.y - v2.y, v1.z - v2.z);
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -101,7 +113,7 @@ public class Vector {
 
         Vector vector = (Vector) o;
 
-        return Double.compare(vector.x, x) == 0 && Double.compare(vector.y, y) == 0 && Double.compare(vector.z, z) == 0;
+        return MathUtil.equals(vector.x, x) && MathUtil.equals(vector.y, y) && MathUtil.equals(vector.z, z);
 
     }
 

@@ -162,12 +162,12 @@ public class Generator {
             Vector a = fg.corners.get(i);
             Vector b = fg.corners.get((i+1) % fg.corners.size());
 
-            double angle = Vector.angle(a.copy().sub(m), b.copy().sub(m));
+            double angle = Vector.angle(Vector.sub(a, m), Vector.sub(b, m));
             if (angle > maxCornerAngle) {
                 int parts = (int) Math.ceil(angle / maxCornerAngle);
-                Vector ab = b.copy().sub(a).scale(1D/(parts));
+                Vector ab = Vector.sub(b, a).mult(1d/parts);
                 for (int j = 1; j <= parts-1; j++) {
-                    newCorners.add(a.copy().add(ab.copy().scale(j)));
+                    newCorners.add(Vector.add(a, ab.copy().mult(j)));
                 }
             }
         }
@@ -221,17 +221,12 @@ public class Generator {
         for (int i = 0; i < fg.corners.size(); i++) {
             Vector corner = fg.corners.get(i);
             Vector mc = new Vector(corner.x - m.x, corner.y - m.y, 0).norm();
-            Vector cornerBase = m.copy().add(mc.copy().scale(pillarRadius));
+            Vector cornerBase = m.copy().add(mc.copy().mult(pillarRadius));
             cornerBase.z = h - hT;
             cornerBases.add(cornerBase);
 
-            Vector cornerD = corner.copy().sub(cornerBase);
-            cornerD.scale(1/cornerD.z);
-            cornerDir.add(cornerD);
-        }
-
-        for (int i = 0; i < fg.corners.size(); i++) {
-            System.out.println(fg.corners.get(i) + " " + cornerBases.get(i) + " " + cornerDir.get(i));
+            Vector cornerD = Vector.sub(corner, cornerBase);
+            cornerDir.add(cornerD.mult(1d/cornerD.z));
         }
 
         int hopperLayer = 1;
@@ -243,7 +238,7 @@ public class Generator {
             for (int i = 0; i <= fg.corners.size(); i++) {
                 Vector cb = cornerBases.get(i % fg.corners.size());
                 Vector cd = cornerDir.get(i % fg.corners.size());
-                Vector p = cb.copy().add(cd.copy().scale(hopperHeight));
+                Vector p = Vector.add(cb, cd.copy().mult(hopperHeight));
 
                 if (hopperLayer % 2 == 0) {
                     currentCorners.add(p);

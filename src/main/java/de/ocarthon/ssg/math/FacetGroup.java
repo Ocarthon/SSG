@@ -116,32 +116,14 @@ public class FacetGroup {
             calculateCorners();
         }
 
-        /*double x = 0;
-        double y = 0;
-        double z = 0;
-
+        List<Vector> corner2D = new ArrayList<>(corners.size());
         for (Vector v : corners) {
-            x += v.x;
-            y += v.y;
-            z += v.z;
+            v = v.copy();
+            v.z = 0;
+            corner2D.add(v);
         }
 
-        return new Vector(x / corners.size(), y / corners.size(), z / corners.size());*/
-        return Centroid.calculateCentroid(corners);
-    }
-
-    public Vector findCenter() {
-        double x = 0;
-        double y = 0;
-        double z = 0;
-
-        for (Facet f : facets) {
-            x += (f.p1.x + f.p2.x + f.p3.x) / 3;
-            y += (f.p1.y + f.p2.y + f.p3.y) / 3;
-            z += (f.p1.z + f.p2.z + f.p3.z) / 3;
-        }
-
-        return new Vector(x / facets.size(), y / facets.size(), z / facets.size());
+        return Centroid.chebychevCenter(corner2D);
     }
 
     public List<Facet> getFacets() {

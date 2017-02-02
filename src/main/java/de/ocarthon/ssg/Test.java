@@ -90,9 +90,6 @@ public class Test {
                     Vector b = fg.findCenterOfCorners();
 
                     drawCircle(g2, rotation.transform(b), 5, Color.ORANGE);
-
-                    b.z = 0;
-                    drawCircle(g2, rotation.transform(b), 5, Color.GREEN);
                 }
 
                 for (Vector v : points) {
@@ -191,9 +188,9 @@ public class Test {
                 double angle = Vector.angle(a.copy().sub(m), b.copy().sub(m));
                 if (angle > maxCornerAngle) {
                     int parts = (int) Math.ceil(angle / maxCornerAngle);
-                    Vector ab = b.copy().sub(a).scale(1D/(parts));
+                    Vector ab = b.copy().sub(a).mult(1D/(parts));
                     for (int j = 1; j <= parts-1; j++) {
-                        newCorners.add(a.copy().add(ab.copy().scale(j)));
+                        newCorners.add(a.copy().add(ab.copy().mult(j)));
                     }
                 }
             }
@@ -203,7 +200,7 @@ public class Test {
             for (int i = 0; i < fg.corners.size(); i++) {
                 Vector corner = fg.corners.get(i);
                 Vector mc = new Vector(corner.x - m.x, corner.y - m.y, 0).norm();
-                points.add(m.copy().add(mc.copy().scale(5)));
+                points.add(m.copy().add(mc.copy().mult(5)));
             }*/
         }
 

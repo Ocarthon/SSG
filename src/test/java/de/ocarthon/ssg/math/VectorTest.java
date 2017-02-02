@@ -45,7 +45,7 @@ public class VectorTest {
     @Test
     public void scale() throws Exception {
         Vector v1 = new Vector(1, 2, 3);
-        v1.scale(1.5);
+        v1.mult(1.5);
 
         assertEquals(1.5, v1.x, 0.001);
         assertEquals(3, v1.y, 0.001);
