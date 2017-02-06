@@ -5,22 +5,24 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class FilamentCalc {
-    static final Pattern E_PATTERN = Pattern.compile("E(\\d*\\.*\\d*)");
+    static final Pattern E_PATTERN = Pattern.compile("E(-*\\d*\\.*\\d*)");
 
     public static void main(String[] args) throws IOException {
         File file = new File("Bogen_struc.gcode");
         FileInputStream fis = new FileInputStream(file);
 
         double currentE = 0;
-        double usedFilament = 0;
+        double globalE = 0;
 
         try (BufferedReader br = new BufferedReader(new FileReader(file))) {
             String line;
             while ((line = br.readLine()) != null) {
                 if (line.startsWith("G1")) {
                     double newE = readDouble(E_PATTERN, line);
-                    usedFilament += newE - currentE;
-                    currentE = newE;
+                    if (!((Double) (Double.NaN)).equals(newE)) {
+                        globalE += newE - currentE;
+                        currentE = newE;
+                    }
                 } else if (line.startsWith("G92")) {
                     currentE = readDouble(E_PATTERN, line);
                 }
@@ -31,7 +33,7 @@ public class FilamentCalc {
 
         fis.close();
 
-        System.out.println("Filament used: " + usedFilament);
+        System.out.println("Filament used: " + globalE);
     }
 
     private static double readDouble(Pattern pattern, String line) {
@@ -44,7 +46,7 @@ public class FilamentCalc {
                 return Double.parseDouble(s);
             }
         } else {
-            return -1;
+            return Double.NaN;
         }
     }
 }

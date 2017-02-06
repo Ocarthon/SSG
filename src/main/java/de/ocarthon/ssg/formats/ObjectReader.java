@@ -11,7 +11,7 @@ public class ObjectReader {
 
     public static Object3D readObject(File file) throws Exception {
         String[] p = file.getName().split("\\.");
-        String ending = p[p.length-1];
+        String ending = p[p.length - 1];
 
         switch (ending) {
             case "obj":

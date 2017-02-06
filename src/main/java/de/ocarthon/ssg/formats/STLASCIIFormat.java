@@ -9,9 +9,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 
-public class STLASCIIFormat {
+class STLASCIIFormat {
 
-    public static Object3D readObject(InputStream in) throws Exception {
+    static Object3D readObject(InputStream in) throws Exception {
         BufferedReader reader = new BufferedReader(new InputStreamReader(in));
 
         reader.readLine(); // Header
@@ -47,11 +47,11 @@ public class STLASCIIFormat {
         while (line == null || line.isEmpty()) {
             line = reader.readLine();
         }
-        
+
         return line;
     }
 
     private static Vector readVertex(String[] s, int index) {
-        return new Vector(Double.parseDouble(s[index]), Double.parseDouble(s[index+1]), Double.parseDouble(s[index+2]));
+        return new Vector(Double.parseDouble(s[index]), Double.parseDouble(s[index + 1]), Double.parseDouble(s[index + 2]));
     }
 }

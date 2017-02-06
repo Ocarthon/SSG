@@ -2,23 +2,27 @@ package de.ocarthon.ssg;
 
 import de.ocarthon.ssg.formats.ObjectReader;
 import de.ocarthon.ssg.math.*;
-import de.ocarthon.ssg.math.Vector;
 
 import javax.swing.*;
 import java.awt.*;
 import java.io.File;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
+import java.util.Random;
 
 @SuppressWarnings("Duplicates")
 public class Test {
     private static Object3D object;
     private static float scale = 10;
     private static Vector zAxis = new Vector(0, 0, 1);
-    private static ArrayList<FacetGroup> facetGroups = new ArrayList<>(2);
+    private static List<FacetGroup> facetGroups = new ArrayList<>(2);
     private static ArrayList<Vector> points = new ArrayList<>();
     private static JSlider angleSlider;
 
     public static void main(String[] args) throws Exception {
+        Locale.setDefault(Locale.ENGLISH);
+
         if (args == null || args.length == 0) {
             System.out.println("No file specified");
             return;
@@ -27,7 +31,6 @@ public class Test {
         File file = new File(args[0]);
         object = ObjectReader.readObject(file);
         object.centerObject();
-
 
         System.out.println(object.facets.size());
 
@@ -87,7 +90,7 @@ public class Test {
                         drawCircle(g2, rotation.transform(v), 5, Color.RED);
                     }
 
-                    Vector b = fg.findCenterOfCorners();
+                    Vector b = fg.center;
 
                     drawCircle(g2, rotation.transform(b), 5, Color.ORANGE);
                 }
@@ -116,13 +119,13 @@ public class Test {
 
     private static void drawCircle(Graphics2D g2, Vector v, double radius, Color color) {
         g2.setColor(color);
-        g2.fillOval((int)(v.y - radius), -(int) (v.z + radius), (int)(radius * 2), (int)(radius * 2));
+        g2.fillOval((int) (v.y - radius), -(int) (v.z + radius), (int) (radius * 2), (int) (radius * 2));
     }
 
     private static void drawFacet(Graphics2D g2, Facet f) {
-        g2.drawLine((int)f.p1.y, -(int)f.p1.z, (int)f.p2.y, -(int)f.p2.z);
-        g2.drawLine((int)f.p1.y, -(int)f.p1.z, (int)f.p3.y, -(int)f.p3.z);
-        g2.drawLine((int)f.p2.y, -(int)f.p2.z, (int)f.p3.y, -(int)f.p3.z);
+        g2.drawLine((int) f.p1.y, -(int) f.p1.z, (int) f.p2.y, -(int) f.p2.z);
+        g2.drawLine((int) f.p1.y, -(int) f.p1.z, (int) f.p3.y, -(int) f.p3.z);
+        g2.drawLine((int) f.p2.y, -(int) f.p2.z, (int) f.p3.y, -(int) f.p3.z);
     }
 
     public static void refreshFacets() {
@@ -130,8 +133,10 @@ public class Test {
 
         facetGroups.clear();
 
+        object.centerObject();
+        object.facets.stream().filter(f -> Vector.angle(f.n, zAxis) >= Math.toRadians(90 + angleSlider.getValue()) && !MathUtil.equals(MathUtil.findLowestPoint(f), 0, 1)).forEach(f -> {
+            double b = MathUtil.findLowestPoint(f);
 
-        object.facets.stream().filter(f -> Vector.angle(f.n, zAxis) >= Math.toRadians(90 + angleSlider.getValue()) && !(MathUtil.findLowestPoint(f) == 0)).forEach(f -> {
             boolean a = false;
             for (FacetGroup fg : facetGroups) {
                 if (fg.isPart(f)) {
@@ -145,66 +150,45 @@ public class Test {
             }
         });
 
-        int oldLength = facetGroups.size();
-        int newLength = oldLength+1;
+        facetGroups = FacetGroup.unifyFacetGroups(facetGroups);
 
-        while (oldLength != newLength) {
-            ArrayList<FacetGroup> newGroup = new ArrayList<>();
-            newGroup.add(facetGroups.get(0));
-            l:
-            for (int i = 1; i < facetGroups.size(); i++) {
-                for (Facet f : facetGroups.get(i).getFacets()) {
-                    for (FacetGroup fg : newGroup) {
-                        if (fg.isPart(f)) {
-                            for (Facet f1 : facetGroups.get(i).getFacets()) {
-                                fg.add(f1);
-                            }
-                            continue l;
-                        }
-                    }
-                }
+        double minArea = 1;
 
-                newGroup.add(facetGroups.get(i));
+        for (int i = facetGroups.size() - 1; i >= 0; i--) {
+            if (facetGroups.get(i).getArea() < minArea) {
+                facetGroups.remove(i);
             }
-
-            oldLength = facetGroups.size();
-            newLength = newGroup.size();
-
-            facetGroups = newGroup;
         }
+
+        facetGroups.forEach(facetGroup -> System.out.println(facetGroup.getArea()));
+
+        double radius2 = 5 * 5;
+
+        FacetGroup support = new FacetGroup(null, Color.GREEN);
 
         for (FacetGroup fg : facetGroups) {
-            fg.removeDoubles();
-            fg.calculateCorners();
-            /*Vector m = fg.findCenterOfCorners();
-            fg.corners.sort(new FacetGroup.PolarVecComp(m));
-            double maxCornerAngle = Math.toRadians(40);
-            ArrayList<Vector> newCorners = new ArrayList<>();
-            for (int i = 0; i < fg.corners.size(); i++) {
-                newCorners.add(fg.corners.get(i));
-                Vector a = fg.corners.get(i);
-                Vector b = fg.corners.get((i+1) % fg.corners.size());
+            fg.calculateHull();
+            System.out.println(facetGroups.get(0).corners);
 
-                double angle = Vector.angle(a.copy().sub(m), b.copy().sub(m));
-                if (angle > maxCornerAngle) {
-                    int parts = (int) Math.ceil(angle / maxCornerAngle);
-                    Vector ab = b.copy().sub(a).mult(1D/(parts));
-                    for (int j = 1; j <= parts-1; j++) {
-                        newCorners.add(a.copy().add(ab.copy().mult(j)));
-                    }
+            double lowZ = Double.MAX_VALUE;
+            for (Facet f : fg.getFacets()) {
+                double lowF = MathUtil.findLowestPoint(f);
+                if (lowF < lowZ) {
+                    lowZ = lowF;
                 }
             }
 
-            fg.corners = newCorners;
+            Vector m = fg.center;
 
-            for (int i = 0; i < fg.corners.size(); i++) {
-                Vector corner = fg.corners.get(i);
-                Vector mc = new Vector(corner.x - m.x, corner.y - m.y, 0).norm();
-                points.add(m.copy().add(mc.copy().mult(5)));
-            }*/
+
+            List<Facet> facets = object.facets;
+            for (Facet f : facets) {
+                if (MathUtil.findLowestPoint(f) < lowZ && Vector.angle(Vector.Z, f.n) <= Math.PI / 2 && MathUtil.dst2PointTriangle(m, f.p1, f.p2, f.p3) <= radius2) {
+                    support.add(f);
+                }
+            }
         }
 
-
-        System.out.println(facetGroups.size() + " " + points.size());
+        facetGroups.add(support);
     }
 }

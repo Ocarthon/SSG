@@ -5,6 +5,7 @@ import java.util.Arrays;
 
 public class Matrix {
     public double[] v = new double[9];
+
     public Matrix(double v11, double v12, double v13, double v21, double v22, double v23,
                   double v31, double v32, double v33) {
         v[0] = v11;
@@ -40,9 +41,9 @@ public class Matrix {
 
     public Vector transform(Vector in) {
         Vector out = new Vector();
-        out.x = in.x*v[0]+in.y*v[1]+in.z*v[2];
-        out.y = in.x*v[3]+in.y*v[4]+in.z*v[5];
-        out.z = in.x*v[6]+in.y*v[7]+in.z*v[8];
+        out.x = in.x * v[0] + in.y * v[1] + in.z * v[2];
+        out.y = in.x * v[3] + in.y * v[4] + in.z * v[5];
+        out.z = in.x * v[6] + in.y * v[7] + in.z * v[8];
 
         return out;
     }

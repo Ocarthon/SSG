@@ -1,6 +1,5 @@
 package de.ocarthon.ssg.formats;
 
-import com.sun.istack.internal.NotNull;
 import de.ocarthon.ssg.math.Facet;
 import de.ocarthon.ssg.math.Object3D;
 import de.ocarthon.ssg.math.Vector;
@@ -11,15 +10,14 @@ import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
 
-public class WavefrontFormat {
+class WavefrontFormat {
 
-    public static Object3D readObject(@NotNull InputStream in) throws Exception {
+    static Object3D readObject(InputStream in) throws Exception {
         BufferedReader reader = new BufferedReader(new InputStreamReader(in));
 
         Object3D obj = new Object3D();
 
         List<Vector> vectors = new ArrayList<>(16);
-
         String line;
         while ((line = reader.readLine()) != null) {
             if (line.length() <= 1) continue;
@@ -28,7 +26,7 @@ public class WavefrontFormat {
             switch (cmd) {
                 case 'v':
                     String[] p = line.trim().split(" ");
-                    if (p.length <= 4) {
+                    if (p.length < 4) {
                         throw new MalformedObjectFile();
                     }
 
@@ -37,14 +35,14 @@ public class WavefrontFormat {
 
                 case 'f':
                     p = line.trim().split(" ");
-                    if (p.length <= 4) {
+                    if (p.length < 4) {
                         throw new MalformedObjectFile();
                     }
 
                     obj.facets.add(new Facet(
-                            vectors.get(Integer.parseInt(p[1].split("/")[0]) - 1),
-                            vectors.get(Integer.parseInt(p[2].split("/")[0]) - 1),
-                            vectors.get(Integer.parseInt(p[3].split("/")[0]) - 1)
+                            vectors.get(Integer.parseInt(p[1].split("/")[0]) - 1).copy(),
+                            vectors.get(Integer.parseInt(p[2].split("/")[0]) - 1).copy(),
+                            vectors.get(Integer.parseInt(p[3].split("/")[0]) - 1).copy()
                     ));
             }
         }

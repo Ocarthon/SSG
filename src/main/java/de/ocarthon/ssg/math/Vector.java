@@ -1,5 +1,8 @@
 package de.ocarthon.ssg.math;
 
+import java.util.Comparator;
+import java.util.List;
+
 public class Vector {
     public double x;
     public double y;
@@ -8,7 +11,6 @@ public class Vector {
     public static final Vector X = new Vector(1, 0, 0);
     public static final Vector Y = new Vector(0, 1, 0);
     public static final Vector Z = new Vector(0, 0, 1);
-    public static final Vector ZERO = new Vector(0, 0, 0);
 
     public Vector() {
     }
@@ -25,6 +27,13 @@ public class Vector {
         this.x = x;
         this.y = y;
         this.z = z;
+        return this;
+    }
+
+    public Vector set(Vector v) {
+        this.x = v.x;
+        this.y = v.y;
+        this.z = v.z;
         return this;
     }
 
@@ -52,16 +61,20 @@ public class Vector {
         return this.x * vec.x + this.y * vec.y + this.z * vec.z;
     }
 
+    public Vector setMag(double mag) {
+        return this.mult(mag / length());
+    }
+
     public double length() {
-        return Math.sqrt(x*x+y*y+z*z);
+        return Math.sqrt(x * x + y * y + z * z);
     }
 
     public double lengthXY() {
-        return Math.sqrt(x*x+y*y);
+        return Math.sqrt(x * x + y * y);
     }
 
     public double length2() {
-        return x*x+y*y+z*z;
+        return x * x + y * y + z * z;
     }
 
     public Vector norm() {
@@ -94,6 +107,10 @@ public class Vector {
         return Math.pow(v1.x - v2.x, 2) + Math.pow(v1.y - v2.y, 2) + Math.pow(v1.z - v2.z, 2);
     }
 
+    public static double dst2XY(Vector v1, Vector v2) {
+        return Math.pow(v1.x - v2.x, 2) + Math.pow(v1.y - v2.y, 2);
+    }
+
     public static double dst(Vector v1, Vector v2) {
         return Math.sqrt(Math.pow(v1.x - v2.x, 2) + Math.pow(v1.y - v2.y, 2) + Math.pow(v1.z - v2.z, 2));
     }
@@ -106,6 +123,10 @@ public class Vector {
         return new Vector(v1.x - v2.x, v1.y - v2.y, v1.z - v2.z);
     }
 
+    public static void sortByPolarAngle(List<Vector> vectors, Vector origin) {
+        vectors.sort(new PolarVecComp(origin));
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -114,6 +135,15 @@ public class Vector {
         Vector vector = (Vector) o;
 
         return MathUtil.equals(vector.x, x) && MathUtil.equals(vector.y, y) && MathUtil.equals(vector.z, z);
+    }
+
+    public boolean equals(Object o, double eps) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        Vector vector = (Vector) o;
+
+        return MathUtil.equals(vector.x, x, eps) && MathUtil.equals(vector.y, y, eps) && MathUtil.equals(vector.z, z, eps);
 
     }
 
@@ -137,5 +167,25 @@ public class Vector {
                 ", y=" + y +
                 ", z=" + z +
                 '}';
+    }
+
+    public static class PolarVecComp implements Comparator<Vector> {
+        private Vector ref;
+
+        public PolarVecComp(Vector ref) {
+            this.ref = ref;
+        }
+
+        @Override
+        public int compare(Vector o1, Vector o2) {
+            Vector r1 = o1.copy().sub(ref);
+            Vector r2 = o2.copy().sub(ref);
+            double at1 = Math.atan2(r1.y, r1.x);
+            double at2 = Math.atan2(r2.y, r2.x);
+
+            if (at1 < at2) return -1;
+            if (at1 > at2) return 1;
+            return 0;
+        }
     }
 }

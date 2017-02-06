@@ -40,15 +40,6 @@ public class GCObject {
         return layers.get(n);
     }
 
-    public double totalHeight() {
-        GCLayer last = layers.get(layers.size()-1);
-        return last.getOffset();
-    }
-
-    public void exportLayer(OutputStream out, Printer printer) {
-
-    }
-
     public void exportInstructions(OutputStream out, Printer printer) {
         PrintWriter writer = new PrintWriter(out);
         double e = 0;

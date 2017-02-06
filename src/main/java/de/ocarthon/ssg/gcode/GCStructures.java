@@ -10,11 +10,16 @@ public final class GCStructures {
                                            double x, double y, double radius, int n) {
         for (int i = 0; i < Math.floor((zMax - zMin) / layerHeight); i++) {
             GCLayer layer = object.newLayer(zMin + (i + 1) * layerHeight, layerHeight, extruder);
-            generateCircle(printer, layer, x, y, radius, n);
+            circle(printer, layer, x, y, radius, n);
         }
     }
 
-    public static void generateCircle(Printer printer, GCLayer layer, double x, double y, double radius, int n) {
+    public static void line(GCLayer layer, double x1, double y1, double x2, double y2) {
+        layer.add(new GCInstructions.G0(x1, y1));
+        layer.add(new GCInstructions.G1(x2, y2));
+    }
+
+    public static void circle(Printer printer, GCLayer layer, double x, double y, double radius, int n) {
         if (printer.supportG2) {
             layer.add(new GCInstructions.G0(x, y + radius));
             layer.add(new GCInstructions.G2(0, -radius));

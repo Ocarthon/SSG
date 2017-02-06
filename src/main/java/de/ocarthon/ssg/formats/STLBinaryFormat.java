@@ -1,6 +1,5 @@
 package de.ocarthon.ssg.formats;
 
-import com.sun.istack.internal.NotNull;
 import de.ocarthon.ssg.math.Facet;
 import de.ocarthon.ssg.math.Object3D;
 import de.ocarthon.ssg.math.Vector;
@@ -8,9 +7,9 @@ import de.ocarthon.ssg.math.Vector;
 import java.io.IOException;
 import java.io.InputStream;
 
-public class STLBinaryFormat {
+class STLBinaryFormat {
 
-    public static Object3D readObject(@NotNull InputStream in) throws Exception {
+    static Object3D readObject(InputStream in) throws Exception {
         // Skip header
         int b = (int) in.skip(80);
         if (b != 80) {

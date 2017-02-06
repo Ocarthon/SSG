@@ -1,9 +1,7 @@
 package de.ocarthon.ssg;
 
-import de.ocarthon.libArcus.Error;
 import de.ocarthon.ssg.curaengine.Cura;
 import de.ocarthon.ssg.curaengine.CuraEngine;
-import de.ocarthon.ssg.curaengine.CuraEngineListener;
 import de.ocarthon.ssg.curaengine.SliceProgress;
 import de.ocarthon.ssg.curaengine.config.Extruder;
 import de.ocarthon.ssg.curaengine.config.Printer;
@@ -17,37 +15,18 @@ import java.io.IOException;
 public class Slice {
 
     public static void main(String[] args) throws Exception {
-        File file = new File("Bogen.stl");
+        File file = new File("slope.stl");
         Object3D obj = ObjectReader.readObject(file);
+        obj.centerObject();
 
         CuraEngine engine = new CuraEngine(7788);
-        engine.addListener(new CuraEngineListener() {
-            @Override
-            public void onSliceStart(SliceProgress p) {
-
-            }
-
-            @Override
-            public void onProgressUpdate(SliceProgress p) {
-                System.out.println(p.getProgress());
-            }
-
-            @Override
-            public void onError(SliceProgress p, Error e) {
-
-            }
-
-            @Override
-            public void onSliceFinished(SliceProgress p) {
-                writeSliceProgress(p);
-            }
-        });
+        engine.addListener(Slice::writeSliceProgress);
 
         Printer printer = new Printer();
         printer.retraction = true;
         printer.retractionAmount = 3;
         printer.supportAngle = 45F;
-        printer.useSupport = false;
+        printer.useSupport = true;
         Extruder extruder = new Extruder();
         printer.addExtruder(extruder);
 

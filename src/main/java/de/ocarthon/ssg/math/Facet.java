@@ -29,21 +29,6 @@ public class Facet {
         return p1.equals(v) || p2.equals(v) || p3.equals(v);
     }
 
-    public boolean isConnected(Facet f) {
-        int k = 0;
-
-        if (contains(f.p1))
-            k++;
-
-        if (contains(f.p2))
-            k++;
-
-        if (contains(f.p3))
-            k++;
-
-        return k >= 2;
-    }
-
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -54,6 +39,18 @@ public class Facet {
         return p1 != null ? p1.equals(facet.p1) : facet.p1 == null &&
                 (p2 != null ? p2.equals(facet.p2) : facet.p2 == null &&
                         (p3 != null ? p3.equals(facet.p3) : facet.p3 == null));
+
+    }
+
+    public boolean equals(Object o, double eps) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        Facet facet = (Facet) o;
+
+        return p1 != null ? p1.equals(facet.p1, eps) : facet.p1 == null &&
+                (p2 != null ? p2.equals(facet.p2, eps) : facet.p2 == null &&
+                        (p3 != null ? p3.equals(facet.p3, eps) : facet.p3 == null));
 
     }
 

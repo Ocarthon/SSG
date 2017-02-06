@@ -12,12 +12,11 @@ import de.ocarthon.ssg.util.FileUtil;
 
 import java.io.File;
 import java.io.IOException;
-
 import java.util.ArrayList;
 import java.util.List;
 
 public class CuraEngine {
-    private static final String[] curaEngineFiles = new String[] {"CuraEngine.exe",
+    private static final String[] curaEngineFiles = new String[]{"CuraEngine.exe",
             "libgcc_s_seh-1.dll", "libstdc++-6.dll", "libwinpthread-1.dll",
             "fdmextruder.def.json", "fdmprinter.def.json"};
     private static File curaEngineDir;
@@ -39,14 +38,14 @@ public class CuraEngine {
 
         try {
             for (String fName : curaEngineFiles) {
-                FileUtil.saveResourceToFile(CuraEngine.class.getResourceAsStream("binary/"+fName), new File(curaEngineDir, fName));
+                FileUtil.saveResourceToFile(CuraEngine.class.getResourceAsStream("binary/" + fName), new File(curaEngineDir, fName));
             }
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
-    public CuraEngine () {
+    public CuraEngine() {
         this(0);
     }
 
@@ -61,7 +60,7 @@ public class CuraEngine {
         }
 
         Cura.Slice.Builder builder = Cura.Slice.newBuilder();
-        CuraConfiguration.addObjects(builder, printer, objects);
+        CuraConfiguration.addObjects(builder, objects);
         CuraConfiguration.setConfiguration(builder, printer);
         sliceConfiguration = builder.build();
 
@@ -101,10 +100,6 @@ public class CuraEngine {
         this.listeners.add(listener);
     }
 
-    public void removeListener(CuraEngineListener listener) {
-        this.listeners.remove(listener);
-    }
-
     public void reset() {
         socket.reset();
     }
@@ -128,7 +123,6 @@ public class CuraEngine {
 
         @Override
         public void stateChanged(ArcusSocket socket, SocketState newState) {
-            System.out.println("STATE: " + newState);
             if (newState == SocketState.Connected) {
                 socket.sendMessage(sliceConfiguration);
             }

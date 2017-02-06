@@ -6,26 +6,26 @@ import java.util.List;
 public class Printer {
     List<Extruder> extruders = new ArrayList<>();
 
-    @CuraSetting(key="machine_start_gcode")
+    @CuraSetting(key = "machine_start_gcode")
     String machineStartGCode = "";
 
-    public String startGcode = "G28 ;Home\nG1 Z15.0 F6000 ;G0 the platform down 15mm\n;Prime the extruder\nG92 E0\nG1 F200 E3\nG92 E0";
+    public String startGCode = "G28 ;Home\nG1 Z15.0 F6000 ;G0 the platform down 15mm\n;Prime the extruder\nG92 E0\nG1 F200 E3\nG92 E0";
 
-    @CuraSetting(key="machine_end_gcode")
+    @CuraSetting(key = "machine_end_gcode")
     String machineStopGCode = "";
 
-    public String endGcode = "M104 S0\nM140 S0\n;Retract the filament\nG92 E1\nG1 E-1 F300\nG28 X0 Y0\nM84";
+    public String endGCode = "M104 S0\nM140 S0\n;Retract the filament\nG92 E1\nG1 E-1 F300\nG28 X0 Y0\nM84";
 
-    @CuraSetting(key="machine_width")
+    @CuraSetting(key = "machine_width")
     public float width = 240F;
 
-    @CuraSetting(key="machine_depth")
+    @CuraSetting(key = "machine_depth")
     public float depth = 215F;
 
-    @CuraSetting(key="machine_height")
+    @CuraSetting(key = "machine_height")
     public float height = 190F;
 
-    @CuraSetting(key="machine_extruder_count")
+    @CuraSetting(key = "machine_extruder_count")
     public int extruderCount = 0;
 
     @CuraSetting(key = "machine_gcode_flavor")
@@ -72,6 +72,12 @@ public class Printer {
 
     @CuraSetting(key = "cool_fan_full_layer")
     public int fanAtLayer = 1;
+
+    @CuraSetting(key = "infill_sparse_density")
+    public int infillDensity = 5;
+
+    @CuraSetting(key = "support_infill_rate")
+    public int supportInfillDensity = 15;
 
     public boolean supportG2 = true;
 

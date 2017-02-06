@@ -8,7 +8,6 @@ public class Object3D {
     public Vector translation = new Vector(0, 0, 0);
     public Vector rotation = new Vector(0, 0, 0);
     public double scale = 1;
-    public int extruderNr = 0;
 
     public Object3D(int facetCount) {
         facets = new ArrayList<>(facetCount);
@@ -19,36 +18,44 @@ public class Object3D {
     }
 
     public void centerObject() {
-        Vector avg = new Vector(0, 0, 0);
         double zMin = Double.MAX_VALUE;
-        double temp;
+
+        List<Vector> vertices = new ArrayList<>();
 
         for (Facet f : facets) {
-            avg.add(f.p1).add(f.p2).add(f.p3);
-            temp = MathUtil.findLowestPoint(f);
+            zMin = Math.min(zMin, MathUtil.findLowestPoint(f));
 
-            zMin = Math.min(zMin, temp);
+            if (!vertices.contains(f.p1)) {
+                vertices.add(f.p1);
+            }
+
+            if (!vertices.contains(f.p2)) {
+                vertices.add(f.p2);
+            }
+
+            if (!vertices.contains(f.p3)) {
+                vertices.add(f.p3);
+            }
         }
 
-        avg.mult(1d/(facets.size() * 3));
+        Vector center = Centroid.chebychevCenter(vertices);
 
-        double finalZMin = zMin;
-        facets.forEach(f -> {
-            f.p1.sub(avg.x, avg.y, finalZMin);
-            f.p2.sub(avg.x, avg.y, finalZMin);
-            f.p3.sub(avg.x, avg.y, finalZMin);
-        });
+        for (Facet f : facets) {
+            f.p1.sub(center.x, center.y, zMin);
+            f.p2.sub(center.x, center.y, zMin);
+            f.p3.sub(center.x, center.y, zMin);
+        }
     }
 
     public byte[] writeObject() {
         // Facet -> 3 Vectors -> 3 Floats -> 4 Bytes (32 bit)
-        byte[] vertices = new byte[facets.size()*3*3*4];
+        byte[] vertices = new byte[facets.size() * 3 * 3 * 4];
         Matrix rot = Matrix.rotationMatrix(rotation.x, rotation.y, rotation.z).multiply(Matrix.scaleMatrix(scale));
         for (int i = 0; i < facets.size(); i++) {
             Facet f = rot.transform(facets.get(i));
-            writeVector(vertices, i * 3*3*4, f.p1);
-            writeVector(vertices, i * 3*3*4 + 12, f.p2);
-            writeVector(vertices, i * 3*3*4 + 24, f.p3);
+            writeVector(vertices, i * 3 * 3 * 4, f.p1);
+            writeVector(vertices, i * 3 * 3 * 4 + 12, f.p2);
+            writeVector(vertices, i * 3 * 3 * 4 + 24, f.p3);
         }
 
         return vertices;

@@ -7,12 +7,12 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.List;
 
-public class GCCLayer extends GCLayer{
-    private List<String> gcode;
+public class GCCLayer extends GCLayer {
+    private List<String> gCode;
 
-    public GCCLayer(List<String> gcode, double offset, double layerHeight, Extruder extruder) {
+    GCCLayer(List<String> gCode, double offset, double layerHeight, Extruder extruder) {
         super(offset, layerHeight, extruder);
-        this.gcode = gcode;
+        this.gCode = gCode;
     }
 
     @Override
@@ -26,8 +26,8 @@ public class GCCLayer extends GCLayer{
 
     @Override
     public void writeGCode(OutputStream out, Printer printer) throws IOException {
-        for (String s : gcode) {
-            out.write((s+"\n").getBytes());
+        for (String s : gCode) {
+            out.write((s + "\n").getBytes());
         }
     }
 

@@ -8,6 +8,7 @@ public class Centroid {
     /**
      * Calculates the geometric center for a polygon with the given vectors
      * as vertices. The geometric center is the average of all vertices
+     *
      * @param vectors vertices of a polygon
      * @return geometric center
      */

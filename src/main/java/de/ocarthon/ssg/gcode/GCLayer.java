@@ -27,10 +27,6 @@ public class GCLayer {
         this.extruder = extruder;
     }
 
-    public double getLayerHeight() {
-        return layerHeight;
-    }
-
     public double getOffset() {
         return offset;
     }
@@ -56,8 +52,8 @@ public class GCLayer {
             current = ((GCInstructions.G0) instruction);
 
             // Apply extruder offset
-            //current.x += extruder.nozzleOffsetX;
-            //current.y += extruder.nozzleOffsetY;
+            current.x += extruder.nozzleOffsetX;
+            current.y += extruder.nozzleOffsetY;
 
             if (last == null) {
                 current.z = offset;
@@ -67,11 +63,11 @@ public class GCLayer {
                 if (last != null) {
                     if (current instanceof GCInstructions.G2) {
                         GCInstructions.G2 g2 = ((GCInstructions.G2) current);
-                        double radius = Math.sqrt(Math.pow(g2.i, 2)+Math.pow(g2.j,2));
+                        double radius = Math.sqrt(Math.pow(g2.i, 2) + Math.pow(g2.j, 2));
                         e += (8 * layerHeight * extruder.nozzleSize * radius * extruder.materialFlow) / (100 * Math.pow(extruder.materialDiameter, 2));
                     } else {
-                        double distance = Math.sqrt(Math.pow(last.x - current.x, 2)+Math.pow(last.y - current.y,2));
-                        e += (distance * layerHeight * extruder.nozzleSize * 4 * extruder.materialFlow)/(100 * Math.PI * Math.pow(extruder.materialDiameter, 2));
+                        double distance = Math.sqrt(Math.pow(last.x - current.x, 2) + Math.pow(last.y - current.y, 2));
+                        e += (distance * layerHeight * extruder.nozzleSize * 4 * extruder.materialFlow) / (100 * Math.PI * Math.pow(extruder.materialDiameter, 2));
                     }
 
                     ((GCInstructions.G1) current).e = e;
@@ -102,18 +98,18 @@ public class GCLayer {
                 firstG1 = true;
 
                 if (printer.retractionEnabled()) {
-                    out.write(("G92 E-"+printer.retractionAmount+"\n").getBytes());
+                    out.write(("G92 E-" + printer.retractionAmount + "\n").getBytes());
                     out.write("G1 F1500 E0\n".getBytes());
                 } else {
                     out.write("G92 E0\n".getBytes());
                 }
             }
 
-            out.write((instruction.convertToGCode(printer, getExtruder())+"\n").getBytes("UTF-8"));
+            out.write((instruction.convertToGCode(printer, getExtruder()) + "\n").getBytes("UTF-8"));
         }
 
         if (printer.retractionEnabled()) {
-            out.write(("G1 F1500 E"+ (e-printer.retractionAmount)+"\n").getBytes());
+            out.write(("G1 F1500 E" + (e - printer.retractionAmount) + "\n").getBytes());
         }
     }
 
