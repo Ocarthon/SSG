@@ -1,20 +1,27 @@
-import de.ocarthon.ssg.math.MathUtil;
-import de.ocarthon.ssg.math.Vector;
+import de.ocarthon.ssg.curaengine.config.Extruder;
+import de.ocarthon.ssg.curaengine.config.Printer;
+import de.ocarthon.ssg.gcode.PrimeTower;
+
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.util.Locale;
 
 public class Test {
 
-    public static void main(String[] args) {
-        Vector p1 = new Vector(15, -10, 11.7543);
-        Vector p2 = new Vector(0.4904, 10, 3.37713);
-        Vector p3 = new Vector(0.4904, -10, 3.37713);
-        Vector p = new Vector(0, 0, 0);
-        /*double radius = 5;
-        double dist2 = MathUtil.dst2PointTriangle(p, p1, p2, p3);
-        System.out.println(dist2);
-        System.out.println(dist2 <= Math.pow(radius, 2));
-        System.out.println(dist2 <= Math.pow(radius + 1, 2));
-        */
+    public static void main(String[] args) throws IOException {
+        Locale.setDefault(Locale.ENGLISH);
+        Printer printer = new Printer();
+        Extruder ext = new Extruder();
+        printer.addExtruder(ext);
 
-        System.out.println(MathUtil.dst2PointLine(p, p2, p3));
+        PrimeTower pt = new PrimeTower(printer);
+
+        FileOutputStream fos = new FileOutputStream("prime.gcode");
+        double e = pt.printLayer(fos, printer, ext);
+        pt.printLayer(fos, printer, ext);
+
+        fos.flush();
+        fos.close();
+
     }
 }

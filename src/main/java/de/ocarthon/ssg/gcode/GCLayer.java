@@ -35,10 +35,6 @@ public class GCLayer {
         instructions.add(instruction);
     }
 
-    public double calculateValues(Printer printer) {
-        return calculateValues(printer, 0);
-    }
-
     public double calculateValues(Printer printer, double eOffset) {
         GCInstructions.G0 last = null;
         GCInstructions.G0 current;
@@ -52,8 +48,8 @@ public class GCLayer {
             current = ((GCInstructions.G0) instruction);
 
             // Apply extruder offset
-            current.x += extruder.nozzleOffsetX;
-            current.y += extruder.nozzleOffsetY;
+            //current.x += extruder.nozzleOffsetX;
+            //current.y += extruder.nozzleOffsetY;
 
             if (last == null) {
                 current.z = offset;
@@ -89,7 +85,7 @@ public class GCLayer {
     }
 
     public void writeGCode(OutputStream out, Printer printer) throws IOException {
-        double e = calculateValues(printer);
+        double e = calculateValues(printer, printer.retractionAmount);
 
         boolean firstG1 = false;
 
@@ -97,20 +93,15 @@ public class GCLayer {
             if (!firstG1 && instruction instanceof GCInstructions.G1) {
                 firstG1 = true;
 
-                if (printer.retractionEnabled()) {
-                    out.write(("G92 E-" + printer.retractionAmount + "\n").getBytes());
-                    out.write("G1 F1500 E0\n".getBytes());
-                } else {
-                    out.write("G92 E0\n".getBytes());
-                }
+                out.write(String.format("G1 F1500 E%.5f%n", printer.retractionAmount).getBytes("UTF-8"));
             }
 
             out.write((instruction.convertToGCode(printer, getExtruder()) + "\n").getBytes("UTF-8"));
         }
 
-        if (printer.retractionEnabled()) {
-            out.write(("G1 F1500 E" + (e - printer.retractionAmount) + "\n").getBytes());
-        }
+        out.write(String.format("G1 F1500 E%.5f%n", e - printer.retractionAmount).getBytes("UTF-8"));
+
+        out.write(String.format("G0 F%f%n", printer.travelSpeed).getBytes("UTF-8"));
     }
 
     public List<GCInstruction> getInstructions() {

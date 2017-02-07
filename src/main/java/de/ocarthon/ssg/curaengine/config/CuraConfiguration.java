@@ -13,6 +13,7 @@ public class CuraConfiguration {
 
         for (Object3D obj : objects) {
             objList.addObjects(Cura.Object.newBuilder().setVertices(ByteString.copyFrom(obj.writeObject()))
+                    .addSettings(createSetting("center_object", "false"))
                     .addSettings(createSetting("mesh_position_x", String.valueOf(obj.translation.x)))
                     .addSettings(createSetting("mesh_position_y", String.valueOf(obj.translation.y)))
                     .addSettings(createSetting("mesh_position_z", String.valueOf(obj.translation.z))));
@@ -29,6 +30,9 @@ public class CuraConfiguration {
         Cura.SettingList.Builder slb = readSettingsFromObject(printer);
         slb.addSettings(createSetting("top_layers", String.valueOf(printer.infillDensity == 100 ? 0 : Math.max(4, Math.ceil(printer.topBottomThickness / printer.layerHeight)))));
         slb.addSettings(createSetting("bottom_layers", String.valueOf(printer.infillDensity == 100 ? 0 : Math.max(4, Math.ceil(printer.topBottomThickness / printer.layerHeight)))));
+        slb.addSettings(createSetting("retraction_enable", "true"));
+        slb.addSettings(createSetting("material_print_temp_prepend", "false"));
+        slb.addSettings(createSetting("material_bed_temp_prepend", "false"));
 
         builder.setGlobalSettings(slb);
 

@@ -15,7 +15,7 @@ import java.io.IOException;
 public class Slice {
 
     public static void main(String[] args) throws Exception {
-        File file = new File("slope.stl");
+        File file = new File("Kugel.stl");
         Object3D obj = ObjectReader.readObject(file);
         obj.centerObject();
 
@@ -23,7 +23,6 @@ public class Slice {
         engine.addListener(Slice::writeSliceProgress);
 
         Printer printer = new Printer();
-        printer.retraction = true;
         printer.retractionAmount = 3;
         printer.supportAngle = 45F;
         printer.useSupport = true;

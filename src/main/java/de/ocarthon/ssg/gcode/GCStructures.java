@@ -20,7 +20,7 @@ public final class GCStructures {
     }
 
     public static void circle(Printer printer, GCLayer layer, double x, double y, double radius, int n) {
-        if (printer.supportG2) {
+        if (printer.useG2) {
             layer.add(new GCInstructions.G0(x, y + radius));
             layer.add(new GCInstructions.G2(0, -radius));
         } else {

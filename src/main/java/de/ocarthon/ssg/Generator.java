@@ -69,13 +69,17 @@ public class Generator {
         File fileOut = new File(args[1]);
 
         // Create printer configuration
-        Printer printer = new Printer();
+        Printer printer = Printer.k8400();
+        /*Printer printer = new Printer();
         printer.supportAngle = (float) alphaMax;
-        printer.supportG2 = false;
+        printer.useG2 = false;
 
         Extruder extruder = new Extruder();
+        Extruder ext2 = new Extruder();
+        ext2.extruderNr = 1;
         printer.addExtruder(extruder);
-
+        printer.addExtruder(ext2);
+        */
 
         GCObject structObj = new GCObject();
 
@@ -117,7 +121,7 @@ public class Generator {
         System.out.print("Generating support structure ");
         for (FacetGroup fg : facetGroups) {
             if (fg.getArea() >= minArea) {
-                generateStructure(fg, structObj, printer, extruder);
+                generateStructure(fg, structObj, printer);
             }
         }
         System.out.println("[" + timer.next() + "ms]");
@@ -134,7 +138,9 @@ public class Generator {
         fos.close();*/
     }
 
-    public static void generateStructure(FacetGroup fg, GCObject structObj, Printer printer, Extruder extruder) {
+    public static void generateStructure(FacetGroup fg, GCObject structObj, Printer printer) {
+        Extruder extruder = printer.getExtruder(0);
+
         // Searches corners
         fg.calculateHull();
 
@@ -184,7 +190,7 @@ public class Generator {
 
         hT = roundDownToLayer(hT / Math.tan(Math.toRadians(alphaMax)), printer);
 
-        double pillarHeight = generateBasis(fg, structObj, printer, extruder);
+        double pillarHeight = generateBasis(fg, structObj, printer, printer.useDualPrint ? printer.getExtruder(1) : extruder);
         while (pillarHeight <= (h - hT)) {
             GCLayer layer = structObj.newLayer(pillarHeight, printer.layerHeight, extruder);
 
