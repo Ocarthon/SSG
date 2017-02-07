@@ -23,9 +23,9 @@ public class Generator {
     private static final double alphaMax = 45;
 
     // Minimaler Abstand von Stützstruktur zu Objekt
-    private static final double minObjDistanceZ = 0.5;
+    private static final double minObjDistanceZ = 0.2;
 
-    private static final double minObjDistanceXY = 1;
+    private static final double minObjDistanceXY = 1.2;
 
     // Radius des Stammes
     private static final double pillarRadius = 5;

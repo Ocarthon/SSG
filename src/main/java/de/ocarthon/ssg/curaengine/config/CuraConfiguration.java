@@ -26,7 +26,11 @@ public class CuraConfiguration {
             builder.addExtruders(createExtruder(ext, printer));
         }
 
-        builder.setGlobalSettings(readSettingsFromObject(printer));
+        Cura.SettingList.Builder slb = readSettingsFromObject(printer);
+        slb.addSettings(createSetting("top_layers", String.valueOf(printer.infillDensity == 100 ? 0 : Math.max(4, Math.ceil(printer.topBottomThickness / printer.layerHeight)))));
+        slb.addSettings(createSetting("bottom_layers", String.valueOf(printer.infillDensity == 100 ? 0 : Math.max(4, Math.ceil(printer.topBottomThickness / printer.layerHeight)))));
+
+        builder.setGlobalSettings(slb);
 
         return builder;
     }

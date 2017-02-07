@@ -79,7 +79,16 @@ public class Printer {
     @CuraSetting(key = "support_infill_rate")
     public int supportInfillDensity = 15;
 
-    public boolean supportG2 = true;
+    @CuraSetting(key = "top_bottom_thickness")
+    public float topBottomThickness = 0.8F;
+
+    @CuraSetting(key = "adhesion_type")
+    public String adhesionType = "skirt";
+
+    @CuraSetting(key = "skirt_line_count")
+    public int skirtLineCount = 4;
+
+    public boolean supportG2 = false;
 
     public void addExtruder(Extruder ext) {
         extruders.add(ext);
