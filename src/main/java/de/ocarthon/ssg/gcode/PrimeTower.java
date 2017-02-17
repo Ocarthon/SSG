@@ -16,11 +16,11 @@ public class PrimeTower {
         this.printer = printer;
     }
 
-    public double printLayer(OutputStream out, Printer printer, Extruder ext) throws IOException {
+    public double printLayer(OutputStream out, Printer printer, Extruder ext, double size) throws IOException {
         double e = ext.isPrimed ? printer.retractionAmount : 0;
 
-        int lanes = (int) Math.floor(printer.primeTowerSize / ext.nozzleSize);
-        double filamentPerLane = (printer.primeTowerSize * printer.layerHeight * ext.nozzleSize * 4 * ext.materialFlow) / (100 * Math.PI * Math.pow(ext.materialDiameter, 2));
+        int lanes = (int) Math.floor(size / ext.nozzleSize);
+        double filamentPerLane = (size * printer.layerHeight * ext.nozzleSize * 4 * ext.materialFlow) / (100 * Math.PI * Math.pow(ext.materialDiameter, 2));
 
         Vector p1 = new Vector(0, 0, 0);
         Vector p2 = new Vector(0, 0, 0);
@@ -32,14 +32,14 @@ public class PrimeTower {
                 p1.x = printer.primeTowerX + ext.nozzleOffsetX;
                 p1.y = printer.primeTowerY + (i + 1) * ext.nozzleSize + ext.nozzleOffsetY;
 
-                p2.x = printer.primeTowerX + printer.primeTowerSize + ext.nozzleOffsetX;
+                p2.x = printer.primeTowerX + size + ext.nozzleOffsetX;
                 p2.y = p1.y;
             } else {
                 p1.x = printer.primeTowerX + (i + 1) * ext.nozzleSize + ext.nozzleOffsetX;
                 p1.y = printer.primeTowerY + ext.nozzleOffsetY;
 
                 p2.x = printer.primeTowerX + (i + 1) * ext.nozzleSize + ext.nozzleOffsetX;
-                p2.y = printer.primeTowerY + printer.primeTowerSize + ext.nozzleOffsetY;
+                p2.y = printer.primeTowerY + size + ext.nozzleOffsetY;
             }
 
             if (i % 2 == 0) {

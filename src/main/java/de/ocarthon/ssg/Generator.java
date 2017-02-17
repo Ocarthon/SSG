@@ -47,6 +47,8 @@ public class Generator {
     // Distanz zwischen Füllungslinien
     private static final double infillDistance = 4;
 
+    private static final int connectingLayers = 10;
+
     private static final double minArea = 1;
 
     private static double supportMaxHeight = 0;
@@ -55,31 +57,24 @@ public class Generator {
     public static void main(String[] args) throws Exception {
         Locale.setDefault(Locale.ENGLISH);
 
+        Printer printer = Printer.k8400();
+
         if (args == null || args.length == 0) {
             System.out.println("No object file specified");
             return;
         }
 
+        String fileName;
         if (args.length != 2) {
-            System.out.println("No output file specified");
-            return;
+            fileName = args[0].split("\\.")[0] + "_struc" + (printer.useDualPrint ? "_dual" : "") + ".gcode";
+            System.out.println("Using filename: " + fileName);
+        } else {
+            fileName = args[1];
         }
 
         // Open output file
-        File fileOut = new File(args[1]);
+        File fileOut = new File(fileName);
 
-        // Create printer configuration
-        Printer printer = Printer.k8400();
-        /*Printer printer = new Printer();
-        printer.supportAngle = (float) alphaMax;
-        printer.useG2 = false;
-
-        Extruder extruder = new Extruder();
-        Extruder ext2 = new Extruder();
-        ext2.extruderNr = 1;
-        printer.addExtruder(extruder);
-        printer.addExtruder(ext2);
-        */
 
         GCObject structObj = new GCObject();
 
@@ -342,7 +337,7 @@ public class Generator {
                 GCLayer layer = structObj.newLayer(height, height == printer.layerHeight0 ? printer.layerHeight0 : printer.layerHeight, extruder);
 
                 int basisCount = (int) Math.floor((basisHeight - height) / (tanB * extruder.nozzleSize));
-                for (int i = -pillarWidth + 1; i < basisCount; i++) {
+                for (int i = basisCount - 1; i >= - pillarWidth + 1; i--) {
                     GCStructures.circle(printer, layer, m.x, m.y, pillarRadius + i * extruder.nozzleSize, circleCorners);
                 }
 
@@ -353,8 +348,10 @@ public class Generator {
         } else {
             double alpha = 2 * Math.PI / basisCorners;
             double height = roundDownToLayer(supLow, printer);
+
+            int layers = 0;
             double segments = 0;
-            while (segments < basisCorners) {
+            while (segments < basisCorners || ++layers < connectingLayers) {
                 segments = 0;
 
                 GCLayer layer = structObj.newLayer(height + printer.layerHeight, printer.layerHeight, extruder);

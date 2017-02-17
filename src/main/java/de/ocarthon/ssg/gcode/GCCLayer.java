@@ -8,7 +8,7 @@ import java.io.OutputStream;
 import java.util.List;
 
 public class GCCLayer extends GCLayer {
-    private List<String> gCode;
+    public List<String> gCode;
 
     GCCLayer(List<String> gCode, double offset, double layerHeight, Extruder extruder) {
         super(offset, layerHeight, extruder);
@@ -17,6 +17,10 @@ public class GCCLayer extends GCLayer {
 
     @Override
     public void add(GCInstruction instruction) {
+    }
+
+    public boolean hasContent() {
+        return gCode.size() != 0;
     }
 
     @Override

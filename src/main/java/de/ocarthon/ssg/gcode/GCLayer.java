@@ -35,6 +35,10 @@ public class GCLayer {
         instructions.add(instruction);
     }
 
+    public boolean hasContent() {
+        return instructions.size() != 0;
+    }
+
     public double calculateValues(Printer printer, double eOffset) {
         GCInstructions.G0 last = null;
         GCInstructions.G0 current;
@@ -101,7 +105,7 @@ public class GCLayer {
 
         out.write(String.format("G1 F1500 E%.5f%n", e - printer.retractionAmount).getBytes("UTF-8"));
 
-        out.write(String.format("G0 F%f%n", printer.travelSpeed).getBytes("UTF-8"));
+        out.write(String.format("G0 F%f%n", printer.travelSpeed * 60).getBytes("UTF-8"));
     }
 
     public List<GCInstruction> getInstructions() {

@@ -20,9 +20,9 @@ public class Extruder {
     public double lineWidth = 0.35;
 
     @CuraSetting(key = "material_print_temperature")
-    public double printTemperature = 200;
+    public double printTemperature = 195;
 
-    public double standbyTemperature = 160;
+    public double standbyTemperature = 195;
 
     @CuraSetting(key = "material_diameter")
     public double materialDiameter = 1.75;

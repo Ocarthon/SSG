@@ -78,19 +78,36 @@ public class Splicer {
         LinkedList<Cura.GCodeLayer> layers = slice.getLayers();
 
         Extruder mainExt = printer.getExtruder(0);
+        Extruder secExt = printer.getExtruder(1);
         Extruder activeExt = mainExt;
         PrimeTower primeTower = new PrimeTower(printer);
 
         // Heat up extruder
         if (printer.useDualPrint) {
-            write(fos, "M104 T1 S%f%n", printer.getExtruder(1).standbyTemperature);
+            write(fos, "M104 T1 S%f%n", secExt.standbyTemperature);
         }
 
         write(fos, "M109 T0 S%f%n", mainExt.printTemperature);
 
+        if (printer.useDualPrint) {
+            write(fos, "M109 T1 S%f%n", secExt.standbyTemperature);
+        }
+
         // Start GCode
         write(fos, "%s%n", printer.startGCode);
 
+        // Prime inactive extruder
+        if (printer.useDualPrint) {
+            primeExtruder(fos, printer, secExt, primeTower);
+
+            write(fos, "G92 E0%n");
+            write(fos, "G1 F%f E%.5f%n", printer.nozzleSwitchRetractionSpeed, -printer.nozzleSwitchRetractionAmount + printer.retractionAmount);
+        }
+
+        primeExtruder(fos, printer, mainExt, primeTower);
+        write(fos, "G92 E0%n");
+        write(fos, "G1 F%f E%.5f%n", printer.retractionSpeed, printer.retractionAmount);
+        write(fos, "G92 E0");
 
         double lastE = 0;
         int objLayer = 0;
@@ -127,7 +144,7 @@ public class Splicer {
 
                 if (!endsWithRetraction(lines, printer)) {
                     e -= printer.retractionAmount;
-                    write(fos, "G1 F1500 E%.5f%n", e);
+                    write(fos, "G1 F%f E%.5f%n", printer.retractionSpeed, e);
                 }
 
                 lastE = e;
@@ -138,7 +155,7 @@ public class Splicer {
             while (obj.layerCount() > objLayer && obj.getLayer(objLayer).getOffset() <= z) {
                 GCLayer gcLayer = obj.getLayer(objLayer);
 
-                if (gcLayer.getInstructions() == null || gcLayer.getInstructions().size() != 0) {
+                if (gcLayer.hasContent()) {
                     write(fos, "; GC_LAYER%n");
                     Extruder ext = gcLayer.getExtruder();
                     if (activeExt != ext) {
@@ -146,6 +163,7 @@ public class Splicer {
                         activeExt = ext;
                     }
                     gcLayer.writeGCode(fos, printer);
+                    write(fos, "G92 E0%n");
                 }
 
                 objLayer++;
@@ -172,7 +190,7 @@ public class Splicer {
 
                 if (retract) {
                     write(fos, "G92 E%.5f%n", lastE - printer.retractionAmount);
-                    write(fos, "G1 F1500 E%.5f%n", lastE);
+                    write(fos, "G1 F%f E%.5f%n", printer.retractionSpeed, lastE);
 
                     write(fos, "%s%n", lines[j++]);
                 }
@@ -198,7 +216,7 @@ public class Splicer {
                     }
 
                     write(fos, "G92 E%.5f%n", printer.retractionAmount);
-                    write(fos, "G1 F1500 E0%n");
+                    write(fos, "G1 F%f E0%n", printer.retractionSpeed);
 
                     for (int l = end + 1; l < lines.length; l++) {
                         write(fos, "%s%n", lines[l]);
@@ -301,30 +319,36 @@ public class Splicer {
         return line;
     }
 
+    private static void primeExtruder(OutputStream out, Printer printer, Extruder extruder, PrimeTower primeTower) throws IOException {
+        write(out, "; PRIMING EXTRUDER %d%n", extruder.extruderNr);
+
+        write(out, "T%d%n", extruder.extruderNr);
+
+        // Print prime tower
+        primeTower.printLayer(out, printer, extruder, 3 * printer.primeTowerSize);
+    }
+
     private static void performExtruderChange(OutputStream out, Printer printer, Extruder off, Extruder on, PrimeTower primeTower, double z) throws IOException {
         write(out, "; EXTRUDER CHANGE%n");
 
-        // Move to (0, 0) to wait for temperature
-        write(out, "G0 F%.5f X%.5f Y%.5f%n", printer.travelSpeed * 60, printer.origin.x, printer.origin.y);
+        // Move to switch position
+        write(out, "G0 F%f X%.5f Y%.5f%n", printer.travelSpeed * 60, printer.nozzleSwitchPosition.x, printer.nozzleSwitchPosition.y);
 
-        // bring inactive extruder down to standby temperature
-        write(out, "M104 T%d S%f%n", off.extruderNr, off.standbyTemperature);
+        // Retract
+        write(out, "G92 E0%n");
+        write(out, "G1 F%f E%.5f%n", printer.nozzleSwitchRetractionSpeed, -printer.nozzleSwitchRetractionAmount + printer.retractionAmount);
 
-        // heat active extruder and wait
-        write(out, "M109 T%d S%f%n", on.extruderNr, on.printTemperature);
 
         write(out, "T%d%n", on.extruderNr);
 
-        if (printer.usePrimeTower || !on.isPrimed) {
-            // Print prime tower
-            primeTower.printLayer(out, printer, on);
+        write(out, "G1 F%f E%.5f%n", printer.nozzleSwitchRetractionSpeed, printer.nozzleSwitchRetractionAmount - printer.retractionAmount);
+        write(out, "G92 E0%n");
 
-            // Reset e-axis
+        if (printer.usePrimeTower) {
+            primeTower.printLayer(out, printer, on, printer.primeTowerSize);
             write(out, "G92 E0%n");
+            write(out, "G0 F%f X%.5f Y%.5f Z%.5f%n", printer.travelSpeed * 60, printer.nozzleSwitchPosition.x, printer.nozzleSwitchPosition.y, z);
         }
-
-        // move to given z + layer height to be safe
-        write(out, "G1 F%f Z%.5f%n", printer.travelSpeed * 60, z + printer.layerHeight);
     }
 
     private static boolean startsWithRetraction(String[] lines, Printer printer) {

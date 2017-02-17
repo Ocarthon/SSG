@@ -58,7 +58,7 @@ public class Printer {
     public double layerHeight0 = 0.2;
 
     @CuraSetting(key = "speed_print")
-    public double printSpeed = 60;
+    public double printSpeed = 45;
 
     @CuraSetting(key = "speed_travel")
     public double travelSpeed = 120;
@@ -77,6 +77,15 @@ public class Printer {
 
     @CuraSetting(key = "retraction_amount")
     public double retractionAmount = 6;
+
+    public double retractionSpeed = 70 * 60;
+
+    //public Vector nozzleSwitchPosition = new Vector(40, 40, 0);
+    public Vector nozzleSwitchPosition = new Vector(120, 90, 0);
+
+    public double nozzleSwitchRetractionAmount = 12;
+
+    public double nozzleSwitchRetractionSpeed = 80 * 60;
 
     //
     // Support
@@ -107,13 +116,13 @@ public class Printer {
     //
     // Priming tower
     //
-    public boolean usePrimeTower = false;
+    public boolean usePrimeTower = true;
 
-    public double primeTowerX = 170;
+    public double primeTowerX = 20;
 
-    public double primeTowerY = 20;
+    public double primeTowerY = 40;
 
-    public double primeTowerSize = 10;
+    public double primeTowerSize = 7;
 
 
     public void addExtruder(Extruder ext) {
@@ -132,8 +141,9 @@ public class Printer {
         
         Extruder ext2 = new Extruder();
         ext2.extruderNr = 1;
-        ext2.nozzleOffsetX = 23.7F;
-        ext2.isPrimed = false;
+        //ext2.nozzleOffsetX = -23.7F;
+        ext2.nozzleOffsetX = -24.7;
+        //ext2.isPrimed = false;
         
         printer.addExtruder(ext1);
         printer.addExtruder(ext2);

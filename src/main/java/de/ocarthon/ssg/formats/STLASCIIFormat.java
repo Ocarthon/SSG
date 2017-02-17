@@ -24,12 +24,12 @@ class STLASCIIFormat {
                 break;
             }
 
-            Vector n = readVertex(normal.trim().split(" "), 2);
+            Vector n = readVertex(normal);
 
             readLine(reader); // outer loop
-            Vector p1 = readVertex(readLine(reader).trim().split(" "), 1);
-            Vector p2 = readVertex(readLine(reader).trim().split(" "), 1);
-            Vector p3 = readVertex(readLine(reader).trim().split(" "), 1);
+            Vector p1 = readVertex(readLine(reader));
+            Vector p2 = readVertex(readLine(reader));
+            Vector p3 = readVertex(readLine(reader));
             readLine(reader); // endloop
 
             readLine(reader); // endfacet
@@ -51,7 +51,17 @@ class STLASCIIFormat {
         return line;
     }
 
-    private static Vector readVertex(String[] s, int index) {
-        return new Vector(Double.parseDouble(s[index]), Double.parseDouble(s[index + 1]), Double.parseDouble(s[index + 2]));
+    private static Vector readVertex(String s) {
+        Vector v = new Vector(0, 0, 0);
+        int i = s.lastIndexOf(32);
+        v.z = Double.parseDouble(s.substring(i));
+
+        int i2 = s.lastIndexOf(32, i - 1);
+        v.y = Double.parseDouble(s.substring(i2, i));
+
+        i = s.lastIndexOf(32, i2 - 1);
+        v.x = Double.parseDouble(s.substring(i, i2));
+
+        return v;
     }
 }

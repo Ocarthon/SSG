@@ -15,7 +15,7 @@ import java.io.IOException;
 public class Slice {
 
     public static void main(String[] args) throws Exception {
-        File file = new File("Kugel.stl");
+        File file = new File("Bogen.stl");
         Object3D obj = ObjectReader.readObject(file);
         obj.centerObject();
 

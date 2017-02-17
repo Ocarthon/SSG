@@ -17,8 +17,8 @@ class STLBinaryFormat {
         }
 
         // read triangle count
-        byte[] data = new byte[4];
-        b = in.read(data);
+        byte[] data = new byte[12 * 4 + 2];
+        b = in.read(data, 0, 4);
         if (b != 4) {
             throw new MalformedObjectFile("No triangle count");
         }
@@ -27,45 +27,23 @@ class STLBinaryFormat {
 
         Object3D obj = new Object3D(triangleCount);
 
-        for (int i = 0; i < triangleCount; i++) {
-            b = (int) in.skip(12);
-            if (b != 12) {
-                throw new IOException();
-            }
 
-            b = (int) in.skip(2);
-            if (b != 2) {
+        for (int i = 0; i < triangleCount; i++) {
+            if (in.read(data) != data.length) {
                 throw new MalformedObjectFile();
             }
 
-            obj.facets.add(new Facet(readVector(in), readVector(in), readVector(in)));
+            obj.facets.add(new Facet(readVector(data, 14), readVector(data, 26), readVector(data, 38)));
         }
 
         return obj;
     }
 
-    private static Vector readVector(InputStream in) throws Exception {
-        Vector v = new Vector();
-        int total = 0;
-        byte[] d = new byte[4];
-
-        total += in.read(d);
-        v.x = readFloat(d);
-
-        total += in.read(d);
-        v.y = readFloat(d);
-
-        total += in.read(d);
-        v.z = readFloat(d);
-
-        if (total != 12) {
-            throw new MalformedObjectFile("malformed triangle");
-        }
-
-        return v;
+    private static Vector readVector(byte[] data, int o) {
+        return new Vector(readFloat(data, o), readFloat(data, o + 4), readFloat(data, o + 8));
     }
 
-    private static float readFloat(byte[] d) {
-        return Float.intBitsToFloat((d[0] & 0xFF) << 16 | (d[1] & 0xFF) << 24 | (d[2] & 0xFF) | (d[3] & 0xFF) << 8);
+    private static float readFloat(byte[] d, int o) {
+        return Float.intBitsToFloat((d[o] & 0xFF) << 16 | (d[o + 1] & 0xFF) << 24 | (d[o + 2] & 0xFF) | (d[o + 3] & 0xFF) << 8);
     }
 }
