@@ -23,7 +23,7 @@ public class Object3D {
         List<Vector> vertices = new ArrayList<>();
 
         for (Facet f : facets) {
-            zMin = Math.min(zMin, MathUtil.findLowestPoint(f));
+            zMin = Math.min(zMin, f.findLowestPoint());
 
             if (!vertices.contains(f.p1)) {
                 vertices.add(f.p1);

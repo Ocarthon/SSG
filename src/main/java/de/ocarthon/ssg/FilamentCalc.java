@@ -8,7 +8,7 @@ public class FilamentCalc {
     static final Pattern E_PATTERN = Pattern.compile("E(-*\\d*\\.*\\d*)");
 
     public static void main(String[] args) throws IOException {
-        File file = new File("Bogen_struc.gcode");
+        File file = new File("Kugel_struc.gcode");
         FileInputStream fis = new FileInputStream(file);
 
         double currentE = 0;

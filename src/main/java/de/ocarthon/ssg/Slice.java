@@ -15,19 +15,16 @@ import java.io.IOException;
 public class Slice {
 
     public static void main(String[] args) throws Exception {
-        File file = new File("Bogen.stl");
+        File file = new File("Kugel.stl");
         Object3D obj = ObjectReader.readObject(file);
         obj.centerObject();
 
         CuraEngine engine = new CuraEngine(7788);
         engine.addListener(Slice::writeSliceProgress);
 
-        Printer printer = new Printer();
-        printer.retractionAmount = 3;
-        printer.supportAngle = 45F;
+        Printer printer = Printer.k8400();
+        printer.useDualPrint = false;
         printer.useSupport = true;
-        Extruder extruder = new Extruder();
-        printer.addExtruder(extruder);
 
         engine.slice(printer, obj);
     }

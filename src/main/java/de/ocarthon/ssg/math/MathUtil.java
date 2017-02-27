@@ -9,14 +9,6 @@ public final class MathUtil {
     private MathUtil() {
     }
 
-    public static double findLowestPoint(Facet f) {
-        double l = f.p1.z;
-        if (f.p2.z < l) l = f.p2.z;
-        if (f.p3.z < l) l = f.p3.z;
-
-        return l;
-    }
-
     /**
      * calculates the distance between a point and a line
      *

@@ -47,7 +47,7 @@ public class Object3DTest {
         double min = Double.MAX_VALUE;
 
         for (Facet f : object.facets) {
-            min = Math.min(min, MathUtil.findLowestPoint(f));
+            min = Math.min(min, f.findLowestPoint());
         }
 
         assertEquals(0, min, 0.0001);

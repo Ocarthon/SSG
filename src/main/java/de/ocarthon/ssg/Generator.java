@@ -58,8 +58,7 @@ public class Generator {
         Locale.setDefault(Locale.ENGLISH);
 
         Printer printer = Printer.k8400();
-        printer.infillDensity = 5;
-        printer.usePrimeTower = true;
+        printer.useDualPrint = false;
 
         if (args == null || args.length == 0) {
             System.out.println("No object file specified");
@@ -92,7 +91,7 @@ public class Generator {
 
         // Overhang detection
         System.out.print("Searching overhangs ");
-        object.facets.stream().filter(f -> Vector.angle(f.n, Vector.Z) >= Math.toRadians(90 + alphaMax) && !MathUtil.equals(MathUtil.findLowestPoint(f), 0)).forEach(f -> {
+        object.facets.stream().filter(f -> Vector.angle(f.n, Vector.Z) >= Math.toRadians(90 + alphaMax) && !MathUtil.equals(f.findLowestPoint(), 0)).forEach(f -> {
             boolean a = false;
             for (FacetGroup fg : facetGroups) {
                 if (fg.isPart(f)) {
@@ -308,7 +307,7 @@ public class Generator {
 
         double lowZ = Double.MAX_VALUE;
         for (Facet f : fg.getFacets()) {
-            double lowF = MathUtil.findLowestPoint(f);
+            double lowF = f.findLowestPoint();
             if (lowF < lowZ) {
                 lowZ = lowF;
             }
@@ -319,7 +318,7 @@ public class Generator {
 
         double supLow = Double.MAX_VALUE;
         for (Facet f : object.facets) {
-            double z = MathUtil.findLowestPoint(f);
+            double z = f.findLowestPoint();
             if (z < lowZ && Vector.angle(Vector.Z, f.n) <= Math.PI / 2 && MathUtil.dst2PointTriangle(m, f.p1, f.p2, f.p3) <= r2) {
                 supportFacets.add(f);
 

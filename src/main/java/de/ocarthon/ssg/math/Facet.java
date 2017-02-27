@@ -25,6 +25,14 @@ public class Facet {
         }
     }
 
+    public double findLowestPoint() {
+        double l = p1.z;
+        if (p2.z < l) l = p2.z;
+        if (p3.z < l) l = p3.z;
+
+        return l;
+    }
+
     public boolean contains(Vector v) {
         return p1.equals(v) || p2.equals(v) || p3.equals(v);
     }

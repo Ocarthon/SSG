@@ -5,6 +5,7 @@ import de.ocarthon.ssg.math.*;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.ActionEvent;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
@@ -18,7 +19,13 @@ public class Test {
     private static Vector zAxis = new Vector(0, 0, 1);
     private static List<FacetGroup> facetGroups = new ArrayList<>(2);
     private static ArrayList<Vector> points = new ArrayList<>();
+    private static List<Facet> supportFacets = new ArrayList<>();
     private static JSlider angleSlider;
+
+    private static boolean showRegions = true;
+    private static boolean showHull = true;
+    private static boolean showCorners = true;
+    private static boolean showSupportFacets = true;
 
     public static void main(String[] args) throws Exception {
         Locale.setDefault(Locale.ENGLISH);
@@ -56,7 +63,6 @@ public class Test {
             frame.repaint();
         });
 
-
         refreshFacets();
 
         JPanel renderPanel = new JPanel() {
@@ -79,29 +85,51 @@ public class Test {
                     drawFacet(g2, f);
                 }
 
+                if (showRegions ||showHull || showCorners) {
+                    for (FacetGroup fg : facetGroups) {
+                        if (showRegions) {
+                            g2.setColor(fg.color);
+                            for (Facet f : fg.getFacets()) {
+                                drawFacet(g2, rotation.transform(f));
+                            }
 
-                for (FacetGroup fg : facetGroups) {
-                    g2.setColor(fg.color);
-                    for (Facet f : fg.getFacets()) {
+                        }
+
+                        if (showHull) {
+                            for (Vector v : fg.corners) {
+                                drawCircle(g2, rotation.transform(v), 10, Color.RED);
+                            }
+                            Vector b = fg.center;
+
+                            drawCircle(g2, rotation.transform(b), 10, Color.ORANGE);
+
+                        }
+
+                        if (showCorners) {
+                            for (Vector v : points) {
+                                v = rotation.transform(v);
+                                drawCircle(g2, v, 10, Color.YELLOW);
+                            }
+                        }
+                    }
+                }
+
+                if (showSupportFacets) {
+                    for (Facet f : supportFacets) {
+                        f.color = Color.GREEN;
                         drawFacet(g2, rotation.transform(f));
                     }
-
-                    for (Vector v : fg.corners) {
-                        drawCircle(g2, rotation.transform(v), 5, Color.RED);
-                    }
-
-                    Vector b = fg.center;
-
-                    drawCircle(g2, rotation.transform(b), 5, Color.ORANGE);
                 }
-
-                for (Vector v : points) {
-                    v = rotation.transform(v);
-                    drawCircle(g2, v, 5, Color.YELLOW);
-                }
-
             }
         };
+
+        renderPanel.getInputMap().put(KeyStroke.getKeyStroke('1'), "1");
+        renderPanel.getActionMap().put("1", new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                System.out.println("1");
+            }
+        });
 
         pane.add(renderPanel, BorderLayout.CENTER);
 
@@ -134,8 +162,8 @@ public class Test {
         facetGroups.clear();
 
         object.centerObject();
-        object.facets.stream().filter(f -> Vector.angle(f.n, zAxis) >= Math.toRadians(90 + angleSlider.getValue()) && !MathUtil.equals(MathUtil.findLowestPoint(f), 0, 1)).forEach(f -> {
-            double b = MathUtil.findLowestPoint(f);
+        object.facets.stream().filter(f -> Vector.angle(f.n, zAxis) >= Math.toRadians(90 + angleSlider.getValue()) && !MathUtil.equals(f.findLowestPoint(), 0, 1)).forEach(f -> {
+            double b = f.findLowestPoint();
 
             boolean a = false;
             for (FacetGroup fg : facetGroups) {
@@ -164,7 +192,7 @@ public class Test {
 
         double radius2 = 5 * 5;
 
-        FacetGroup support = new FacetGroup(null, Color.GREEN);
+        supportFacets.clear();
 
         for (FacetGroup fg : facetGroups) {
             fg.calculateHull();
@@ -172,7 +200,7 @@ public class Test {
 
             double lowZ = Double.MAX_VALUE;
             for (Facet f : fg.getFacets()) {
-                double lowF = MathUtil.findLowestPoint(f);
+                double lowF = f.findLowestPoint();
                 if (lowF < lowZ) {
                     lowZ = lowF;
                 }
@@ -180,15 +208,31 @@ public class Test {
 
             Vector m = fg.center;
 
+            // Add sub corners
+            Vector.sortByPolarAngle(fg.corners, m);
+
+            for (int i = 0; i < fg.corners.size(); i++) {
+                Vector a = fg.corners.get(i);
+                Vector b = fg.corners.get((i + 1) % fg.corners.size());
+
+                double angle = Vector.angle(Vector.sub(a, m), Vector.sub(b, m));
+                double maxCornerAngle = Math.toRadians(33);
+                if (angle > maxCornerAngle) {
+                    int parts = (int) Math.ceil(angle / maxCornerAngle);
+                    Vector ab = Vector.sub(b, a).mult(1d / parts);
+                    for (int j = 1; j <= parts - 1; j++) {
+                        points.add(Vector.add(a, ab.copy().mult(j)));
+                    }
+                }
+            }
+
 
             List<Facet> facets = object.facets;
             for (Facet f : facets) {
-                if (MathUtil.findLowestPoint(f) < lowZ && Vector.angle(Vector.Z, f.n) <= Math.PI / 2 && MathUtil.dst2PointTriangle(m, f.p1, f.p2, f.p3) <= radius2) {
-                    support.add(f);
+                if (f.findLowestPoint() < lowZ && Vector.angle(Vector.Z, f.n) <= Math.PI / 2 && MathUtil.dst2PointTriangle(m, f.p1, f.p2, f.p3) <= radius2) {
+                    supportFacets.add(f);
                 }
             }
         }
-
-        facetGroups.add(support);
     }
 }
