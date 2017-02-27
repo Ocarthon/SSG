@@ -16,6 +16,10 @@ public class PrimeTower {
         this.printer = printer;
     }
 
+    public double getCurrentHeight() {
+        return printer.layerHeight * (currentLayer + 1);
+    }
+
     public double printLayer(OutputStream out, Printer printer, Extruder ext, double size) throws IOException {
         double e = ext.isPrimed ? printer.retractionAmount : 0;
 
@@ -44,7 +48,8 @@ public class PrimeTower {
 
             if (i % 2 == 0) {
                 if (i == 0) {
-                    out.write(String.format("G0 F%f X%.5f Y%.5f Z%.5f%n", printer.travelSpeed * 30, p1.x, p1.y, currentLayer * printer.layerHeight).getBytes());
+                    out.write(String.format("G0 F%f X%.5f Y%.5f%n", printer.travelSpeed * 30, p1.x, p1.y).getBytes());
+                    out.write(String.format("G0 F%f Z%.5f%n", printer.travelSpeed * 30, currentLayer * printer.layerHeight).getBytes());
 
                     if (ext.isPrimed) {
                         out.write(String.format("G1 F1500 E%.5f%n", printer.retractionAmount).getBytes("UTF-8"));

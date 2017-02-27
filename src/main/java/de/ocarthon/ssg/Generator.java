@@ -58,6 +58,8 @@ public class Generator {
         Locale.setDefault(Locale.ENGLISH);
 
         Printer printer = Printer.k8400();
+        printer.infillDensity = 5;
+        printer.usePrimeTower = true;
 
         if (args == null || args.length == 0) {
             System.out.println("No object file specified");
@@ -72,15 +74,12 @@ public class Generator {
             fileName = args[1];
         }
 
+        Timer timer = new Timer();
+        timer.start();
+
         // Open output file
         File fileOut = new File(fileName);
 
-
-        GCObject structObj = new GCObject();
-
-
-        Timer timer = new Timer();
-        timer.start();
 
         // Read object
         System.out.print("Reading object ");
@@ -89,6 +88,7 @@ public class Generator {
         object.centerObject();
         System.out.println("[" + timer.next() + "ms]");
 
+        GCObject structObj = new GCObject();
 
         // Overhang detection
         System.out.print("Searching overhangs ");

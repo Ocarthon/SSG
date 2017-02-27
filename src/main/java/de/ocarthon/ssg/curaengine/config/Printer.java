@@ -81,7 +81,7 @@ public class Printer {
     public double retractionSpeed = 70 * 60;
 
     //public Vector nozzleSwitchPosition = new Vector(40, 40, 0);
-    public Vector nozzleSwitchPosition = new Vector(120, 90, 0);
+    public Vector nozzleSwitchPosition = new Vector(100, 90, 0);
 
     public double nozzleSwitchRetractionAmount = 12;
 
@@ -142,7 +142,7 @@ public class Printer {
         Extruder ext2 = new Extruder();
         ext2.extruderNr = 1;
         //ext2.nozzleOffsetX = -23.7F;
-        ext2.nozzleOffsetX = -24.7;
+        ext2.nozzleOffsetX = -24.5;
         //ext2.isPrimed = false;
         
         printer.addExtruder(ext1);

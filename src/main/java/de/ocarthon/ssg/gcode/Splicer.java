@@ -107,7 +107,7 @@ public class Splicer {
         primeExtruder(fos, printer, mainExt, primeTower);
         write(fos, "G92 E0%n");
         write(fos, "G1 F%f E%.5f%n", printer.retractionSpeed, printer.retractionAmount);
-        write(fos, "G92 E0");
+        write(fos, "G92 E0%n");
 
         double lastE = 0;
         int objLayer = 0;
@@ -172,6 +172,8 @@ public class Splicer {
             if (activeExt != mainExt) {
                 performExtruderChange(fos, printer, activeExt, mainExt, primeTower, z);
                 activeExt = mainExt;
+            } else if (printer.usePrimeTower && z < primeTower.getCurrentHeight()){
+                primeTower.printLayer(fos, printer, activeExt, printer.primeTowerSize);
             }
 
             int j = 0;
@@ -347,7 +349,8 @@ public class Splicer {
         if (printer.usePrimeTower) {
             primeTower.printLayer(out, printer, on, printer.primeTowerSize);
             write(out, "G92 E0%n");
-            write(out, "G0 F%f X%.5f Y%.5f Z%.5f%n", printer.travelSpeed * 60, printer.nozzleSwitchPosition.x, printer.nozzleSwitchPosition.y, z);
+            write(out, "G0 F%f Z%.5f%n", printer.travelSpeed * 60, z);
+            write(out, "G0 F%f X%.5f Y%.5f%n", printer.travelSpeed * 60, printer.nozzleSwitchPosition.x, printer.nozzleSwitchPosition.y);
         }
     }
 
