@@ -60,6 +60,9 @@ public class FacetGroup {
         return min;
     }
 
+
+
+
     /**
      * Calculates the corners of the given facets. This is done by firstly searching the
      * edges that are only part of one facet and collecting the individual vertices. The
@@ -69,8 +72,6 @@ public class FacetGroup {
      * count does not change
      */
     public void calculateHull() {
-        removeDoubles();
-
         corners.clear();
         List<Vector> vertices = new ArrayList<>(facets.size());
 
@@ -127,7 +128,7 @@ public class FacetGroup {
     /**
      * Removes facets that are in the set more than once
      */
-    private void removeDoubles() {
+    public void removeDoubles() {
         HashSet<Facet> set = new HashSet<>();
         for (Facet f : facets) {
             if (!set.contains(f)) {
@@ -144,10 +145,8 @@ public class FacetGroup {
 
     /**
      * Calculates the chebychev center of the current corners in 2D
-     *
-     * @return chebychev center of corners
      */
-    private Vector findCenterOfCorners() {
+    private void findCenterOfCorners() {
         if (corners.size() == 0) {
             calculateHull();
         }
@@ -159,7 +158,7 @@ public class FacetGroup {
             corner2D.add(v);
         }
 
-        return Centroid.chebychevCenter(corner2D);
+        center = Centroid.chebychevCenter(corner2D);
     }
 
     // http://math.stackexchange.com/q/516223
@@ -171,6 +170,7 @@ public class FacetGroup {
 
         return area / 2;
     }
+
 
     public static List<FacetGroup> unifyFacetGroups(List<FacetGroup> facetGroups) {
         MathUtil.HIGH_TOLERANCE = true;

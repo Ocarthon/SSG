@@ -1,6 +1,7 @@
 package de.ocarthon.ssg;
 
 import de.ocarthon.ssg.formats.ObjectReader;
+import de.ocarthon.ssg.generator.FacetClustering;
 import de.ocarthon.ssg.math.*;
 
 import javax.swing.*;
@@ -20,12 +21,15 @@ public class Test {
     private static List<FacetGroup> facetGroups = new ArrayList<>(2);
     private static ArrayList<Vector> points = new ArrayList<>();
     private static List<Facet> supportFacets = new ArrayList<>();
+    private static List<Facet> splitFacets = new ArrayList<>();
+
     private static JSlider angleSlider;
 
     private static boolean showRegions = true;
-    private static boolean showHull = true;
-    private static boolean showCorners = true;
-    private static boolean showSupportFacets = true;
+    private static boolean showHull = false;
+    private static boolean showCorners = false;
+    private static boolean showSupportFacets = false;
+    private static boolean showSplitFacets = false;
 
     public static void main(String[] args) throws Exception {
         Locale.setDefault(Locale.ENGLISH);
@@ -115,8 +119,15 @@ public class Test {
                 }
 
                 if (showSupportFacets) {
+                    g2.setColor(Color.GREEN);
                     for (Facet f : supportFacets) {
-                        f.color = Color.GREEN;
+                        drawFacet(g2, rotation.transform(f));
+                    }
+                }
+
+                if (showSplitFacets) {
+                    g2.setColor(Color.PINK);
+                    for (Facet f : splitFacets) {
                         drawFacet(g2, rotation.transform(f));
                     }
                 }
@@ -162,8 +173,8 @@ public class Test {
         facetGroups.clear();
 
         object.centerObject();
-        object.facets.stream().filter(f -> Vector.angle(f.n, zAxis) >= Math.toRadians(90 + angleSlider.getValue()) && !MathUtil.equals(f.findLowestPoint(), 0, 1)).forEach(f -> {
-            double b = f.findLowestPoint();
+        object.facets.stream().filter(f -> Vector.angle(f.n, zAxis) >= Math.toRadians(90 + angleSlider.getValue()) && !MathUtil.equals(f.findLowestZ(), 0, 1)).forEach(f -> {
+            double b = f.findLowestZ();
 
             boolean a = false;
             for (FacetGroup fg : facetGroups) {
@@ -194,16 +205,21 @@ public class Test {
 
         supportFacets.clear();
 
+        List<Facet> flatFacets = new ArrayList<>();
+
         for (FacetGroup fg : facetGroups) {
+            fg.removeDoubles();
             fg.calculateHull();
             System.out.println(facetGroups.get(0).corners);
 
             double lowZ = Double.MAX_VALUE;
             for (Facet f : fg.getFacets()) {
-                double lowF = f.findLowestPoint();
+                double lowF = f.findLowestZ();
                 if (lowF < lowZ) {
                     lowZ = lowF;
                 }
+
+                flatFacets.add(new Facet(f));
             }
 
             Vector m = fg.center;
@@ -229,10 +245,29 @@ public class Test {
 
             List<Facet> facets = object.facets;
             for (Facet f : facets) {
-                if (f.findLowestPoint() < lowZ && Vector.angle(Vector.Z, f.n) <= Math.PI / 2 && MathUtil.dst2PointTriangle(m, f.p1, f.p2, f.p3) <= radius2) {
+                if (f.findLowestZ() < lowZ && Vector.angle(Vector.Z, f.n) <= Math.PI / 2 && MathUtil.dst2PointTriangle(m, f.p1, f.p2, f.p3) <= radius2) {
                     supportFacets.add(f);
                 }
             }
+        }
+
+        splitFacets.clear();
+
+        for (Facet f : flatFacets) {
+            f.p1.z = 0;
+            f.p2.z = 0;
+            f.p3.z = 0;
+
+            FacetClustering.splitFacet(f, splitFacets);
+            //splitFacets.add(f);
+        }
+
+        System.out.println("Split facets: " + splitFacets.size());
+
+        facetGroups = FacetClustering.clusterFacets(splitFacets, 2);
+        for (FacetGroup fg : facetGroups) {
+            fg.color = Color.getHSBColor(random.nextFloat(), 1f, 1f);
+            System.out.println(fg.getFacets().size());
         }
     }
 }

@@ -74,7 +74,8 @@ public class Centroid {
             }
 
             // Recursively calculate center
-            Vector y = chebychevCenter(e);
+            Vector y;
+            y = chebychevCenter(e);
 
             if (x.equals(y)) {
                 return x;

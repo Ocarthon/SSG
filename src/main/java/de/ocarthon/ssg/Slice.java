@@ -13,9 +13,17 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 
 public class Slice {
+    public static String outName;
 
     public static void main(String[] args) throws Exception {
-        File file = new File("Kugel.stl");
+        if (args.length < 2) {
+            System.out.println("Invalid args");
+            return;
+        }
+
+        File file = new File(args[0]);
+        outName = args[1];
+
         Object3D obj = ObjectReader.readObject(file);
         obj.centerObject();
 
@@ -24,13 +32,18 @@ public class Slice {
 
         Printer printer = Printer.k8400();
         printer.useDualPrint = false;
-        printer.useSupport = true;
+
+        if (args.length == 3) {
+            printer.useSupport = Boolean.valueOf(args[2]);
+        } else {
+            printer.useSupport = true;
+        }
 
         engine.slice(printer, obj);
     }
 
     public static void writeSliceProgress(SliceProgress p) {
-        File file = new File("Bogen.gcode");
+        File file = new File(outName);
         try {
             FileOutputStream fos = new FileOutputStream(file);
             for (Cura.GCodeLayer layer : p.getLayers()) {

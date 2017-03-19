@@ -82,9 +82,9 @@ public class CuraEngine {
                 "connect", "127.0.0.1:" + socket.getPort(), "-v", "-j",
                 curaEngineDir.getAbsolutePath() + "/fdmprinter.def.json");
         File log = new File(curaEngineDir, "engine.log");
-        if (log.exists() && !log.delete()) {
+        /*if (log.exists() && !log.delete()) {
             throw new RuntimeException("Unable to delete log-File");
-        }
+        }*/
 
         pb.redirectOutput(ProcessBuilder.Redirect.appendTo(log));
         pb.redirectError(ProcessBuilder.Redirect.appendTo(log));

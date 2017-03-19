@@ -4,11 +4,30 @@ import java.io.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class FilamentCalc {
-    static final Pattern E_PATTERN = Pattern.compile("E(-*\\d*\\.*\\d*)");
+public class CompareUsage {
 
-    public static void main(String[] args) throws IOException {
-        File file = new File(args[0]);
+    public static void main(String[] args) throws Exception {
+        if (args.length == 0) {
+            System.out.println("No object!");
+            return;
+        }
+
+        String fileName = args[0];
+
+        Generator.main(new String[]{fileName, "cmpusg_struc.gcode"});
+        Thread.sleep(3000);
+        Slice.main(new String[]{fileName, "cmpusg_norm.gcode", "false"});
+        Thread.sleep(3000);
+        Slice.main(new String[]{fileName, "cmpusg_sup.gcode", "true"});
+        Thread.sleep(3000);
+        double usgStruc = calcFilament(new File("cmpusg_struc.gcode"));
+        double usgNorm = calcFilament(new File("cmpusg_norm.gcode"));
+        double usgSup = calcFilament(new File("cmpusg_sup.gcode"));
+
+        System.out.println(usgNorm + "  " + usgSup + "  " + usgStruc + " (" + Math.abs(usgStruc - usgSup) + ")");
+    }
+
+    private static double calcFilament(File file) throws IOException {
         FileInputStream fis = new FileInputStream(file);
 
         double currentE = 0;
@@ -33,8 +52,10 @@ public class FilamentCalc {
 
         fis.close();
 
-        System.out.println("Filament used: " + globalE);
+        return globalE;
     }
+
+    static final Pattern E_PATTERN = Pattern.compile("E(-*\\d*\\.*\\d*)");
 
     private static double readDouble(Pattern pattern, String line) {
         Matcher m = pattern.matcher(line);

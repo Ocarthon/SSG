@@ -1,6 +1,9 @@
 package de.ocarthon.ssg.math;
 
+
 import java.awt.*;
+import java.util.ArrayList;
+import java.util.List;
 
 public class Facet {
     public Vector p1;
@@ -25,7 +28,14 @@ public class Facet {
         }
     }
 
-    public double findLowestPoint() {
+    public Facet(Facet f) {
+        this.p1 = f.p1.copy();
+        this.p2 = f.p2.copy();
+        this.p3 = f.p3.copy();
+        this.n = f.n.copy();
+    }
+
+    public double findLowestZ() {
         double l = p1.z;
         if (p2.z < l) l = p2.z;
         if (p3.z < l) l = p3.z;
@@ -33,8 +43,30 @@ public class Facet {
         return l;
     }
 
+    public double getArea() {
+        return Math.abs((p1.x - p3.x) * (p2.y - p1.y) - (p1.x - p2.x) * (p3.y - p1.y)) / 2;
+    }
+
+    public double getCircumscribedCircleRadius2XY() {
+        return Vector.dst2XY(p1, p2) * Vector.dst2XY(p2, p3) * Vector.dst2XY(p1, p3) / (16 * Math.pow(getArea(), 2));
+    }
+
+    public Vector getCircumscribedCircleCenterXY() {
+        return MathUtil.solveLSE(2 * p2.x - 2 * p1.x, 2 * p2.y - 2 * p1.y, p2.x * p2.x + p2.y * p2.y - p1.x * p1.x - p1.y * p1.y,
+                2 * p3.x - 2 * p1.x, 2 * p3.y - 2 * p1.y, p3.x * p3.x + p3.y * p3.y - p1.x * p1.x - p1.y * p1.y);
+    }
+
     public boolean contains(Vector v) {
         return p1.equals(v) || p2.equals(v) || p3.equals(v);
+    }
+
+    public List<Vector> toList() {
+        List<Vector> vectors = new ArrayList<>();
+        vectors.add(p1);
+        vectors.add(p2);
+        vectors.add(p3);
+
+        return vectors;
     }
 
     @Override

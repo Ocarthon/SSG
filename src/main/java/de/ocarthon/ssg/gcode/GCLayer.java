@@ -108,6 +108,24 @@ public class GCLayer {
         out.write(String.format("G0 F%f%n", printer.travelSpeed * 60).getBytes("UTF-8"));
     }
 
+    public double getLength() {
+        GCInstructions.G0 last = null;
+        double dst = 0;
+
+        for (GCInstruction instruction : instructions) {
+            if (instruction instanceof GCInstructions.G0) {
+                GCInstructions.G0 g = ((GCInstructions.G0) instruction);
+                if (g instanceof GCInstructions.G1 && last != null) {
+                    dst += Math.sqrt(Math.pow(last.x - g.x, 2) + Math.pow(last.y - g.y, 2));
+                }
+
+                last = g;
+            }
+        }
+
+        return dst;
+    }
+
     public List<GCInstruction> getInstructions() {
         return instructions;
     }

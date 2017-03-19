@@ -59,6 +59,7 @@ public class Generator {
 
         Printer printer = Printer.k8400();
         printer.useDualPrint = false;
+        printer.usePrimeTower = false;
 
         if (args == null || args.length == 0) {
             System.out.println("No object file specified");
@@ -91,7 +92,7 @@ public class Generator {
 
         // Overhang detection
         System.out.print("Searching overhangs ");
-        object.facets.stream().filter(f -> Vector.angle(f.n, Vector.Z) >= Math.toRadians(90 + alphaMax) && !MathUtil.equals(f.findLowestPoint(), 0)).forEach(f -> {
+        object.facets.stream().filter(f -> Vector.angle(f.n, Vector.Z) >= Math.toRadians(90 + alphaMax) && !MathUtil.equals(f.findLowestZ(), 0)).forEach(f -> {
             boolean a = false;
             for (FacetGroup fg : facetGroups) {
                 if (fg.isPart(f)) {
@@ -136,6 +137,7 @@ public class Generator {
         Extruder extruder = printer.getExtruder(0);
 
         // Searches corners
+        fg.removeDoubles();
         fg.calculateHull();
 
         // Save center
@@ -201,6 +203,7 @@ public class Generator {
         List<Vector> cornerBases = new ArrayList<>(fg.corners.size());
         List<Vector> cornerDir = new ArrayList<>(fg.corners.size());
 
+        System.out.println(fg.corners.size());
         for (int i = 0; i < fg.corners.size(); i++) {
             Vector corner = fg.corners.get(i);
             Vector mc = new Vector(corner.x - m.x, corner.y - m.y, 0).norm();
@@ -233,8 +236,21 @@ public class Generator {
                     layer.add(new GCInstructions.G1(p.x, p.y, p.z));
                 }
             }
-
-
+            //
+            //
+            //
+            //
+            //
+            //
+            //
+            System.out.println(layer.getLength());
+            //
+            //
+            //
+            //
+            //
+            //
+            //
             if (hopperLayer % 2 == 0) {
                 double ymin = Double.MAX_VALUE;
                 double ymax = -Double.MAX_VALUE;
@@ -307,7 +323,7 @@ public class Generator {
 
         double lowZ = Double.MAX_VALUE;
         for (Facet f : fg.getFacets()) {
-            double lowF = f.findLowestPoint();
+            double lowF = f.findLowestZ();
             if (lowF < lowZ) {
                 lowZ = lowF;
             }
@@ -318,7 +334,7 @@ public class Generator {
 
         double supLow = Double.MAX_VALUE;
         for (Facet f : object.facets) {
-            double z = f.findLowestPoint();
+            double z = f.findLowestZ();
             if (z < lowZ && Vector.angle(Vector.Z, f.n) <= Math.PI / 2 && MathUtil.dst2PointTriangle(m, f.p1, f.p2, f.p3) <= r2) {
                 supportFacets.add(f);
 
