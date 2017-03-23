@@ -116,7 +116,7 @@ public class Generator {
         System.out.print("Generating support structure ");
         for (FacetGroup fg : facetGroups) {
             if (fg.getArea() >= minArea) {
-                generateStructure(fg, structObj, printer);
+                generateStructure(fg.copy(), structObj, printer);
             }
         }
         System.out.println("[" + timer.next() + "ms]");

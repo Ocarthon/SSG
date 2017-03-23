@@ -35,6 +35,10 @@ public class Facet {
         this.n = f.n.copy();
     }
 
+    public Facet copy() {
+        return new Facet(this);
+    }
+
     public double findLowestZ() {
         double l = p1.z;
         if (p2.z < l) l = p2.z;

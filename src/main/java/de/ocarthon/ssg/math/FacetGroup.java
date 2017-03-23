@@ -23,6 +23,22 @@ public class FacetGroup {
         add(facet);
     }
 
+    public FacetGroup copy() {
+        FacetGroup fg = new FacetGroup(null, this.color);
+
+        for (Facet f : facets) {
+            fg.facets.add(f.copy());
+        }
+
+        for (Vector corner : corners) {
+            fg.corners.add(corner.copy());
+        }
+
+        fg.center = this.center.copy();
+
+        return fg;
+    }
+
     public boolean isPart(Facet f) {
         for (Facet f2 : facets) {
             if (f.p1.equals(f2.p1) || f.p1.equals(f2.p2, 0.1) || f.p1.equals(f2.p3, 0.1)

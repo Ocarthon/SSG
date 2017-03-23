@@ -42,8 +42,12 @@ public class Slice {
         engine.slice(printer, obj);
     }
 
-    public static void writeSliceProgress(SliceProgress p) {
-        File file = new File(outName);
+    private static void writeSliceProgress(SliceProgress sliceProgress) {
+        writeSliceProgress(sliceProgress, outName);
+    }
+
+    public static void writeSliceProgress(SliceProgress p, String fileName) {
+        File file = new File(fileName);
         try {
             FileOutputStream fos = new FileOutputStream(file);
             for (Cura.GCodeLayer layer : p.getLayers()) {
