@@ -4,6 +4,7 @@ import de.ocarthon.ssg.curaengine.config.Extruder;
 import de.ocarthon.ssg.curaengine.config.Printer;
 import de.ocarthon.ssg.formats.ObjectReader;
 import de.ocarthon.ssg.gcode.*;
+import de.ocarthon.ssg.generator.FacetClustering;
 import de.ocarthon.ssg.math.*;
 
 import java.io.File;
@@ -25,10 +26,10 @@ public class Generator {
     // Minimaler Abstand von Stützstruktur zu Objekt
     private static final double minObjDistanceZ = 0.2;
 
-    private static final double minObjDistanceXY = 1.2;
+    private static final double minObjDistanceXY = 0.8;
 
     // Radius des Stammes
-    private static final double pillarRadius = 5;
+    private static final double pillarRadius = 8;
 
     // Breite des Stammes in Bahnen
     private static final int pillarWidth = 1;
@@ -51,21 +52,33 @@ public class Generator {
 
     private static final double minArea = 1;
 
+    private static final double maxDst = 40;
+
+
+
+
     private static double supportMaxHeight = 0;
 
 
     public static void main(String[] args) throws Exception {
         Locale.setDefault(Locale.ENGLISH);
 
-        Printer printer = Printer.k8400();
-        printer.useDualPrint = false;
-        printer.usePrimeTower = false;
 
+        // Arg checking
         if (args == null || args.length == 0) {
             System.out.println("No object file specified");
             return;
         }
 
+
+        // Printer configuration
+        Printer printer = Printer.k8400();
+        printer.useDualPrint = false;
+        printer.usePrimeTower = false;
+        printer.infillDensity = 4;
+
+
+        // Create filename
         String fileName;
         if (args.length != 2) {
             fileName = args[0].split("\\.")[0] + "_struc" + (printer.useDualPrint ? "_dual" : "") + ".gcode";
@@ -74,43 +87,69 @@ public class Generator {
             fileName = args[1];
         }
 
-        Timer timer = new Timer();
-        timer.start();
-
-        // Open output file
         File fileOut = new File(fileName);
 
 
-        // Read object
+        // Timer used for stats
+        Timer timer = new Timer();
+        timer.start();
+
+
+        // Read object and apply transformations
         System.out.print("Reading object ");
         File file = new File(args[0]);
         object = ObjectReader.readObject(file);
         object.centerObject();
+
+        object.scale = 1.5;
+        object.applyScaleAndRotation();
         System.out.println("[" + timer.next() + "ms]");
+
 
         GCObject structObj = new GCObject();
 
+
         // Overhang detection
         System.out.print("Searching overhangs ");
+        supportMaxHeight = Double.MAX_VALUE;
         object.facets.stream().filter(f -> Vector.angle(f.n, Vector.Z) >= Math.toRadians(90 + alphaMax) && !MathUtil.equals(f.findLowestZ(), 0)).forEach(f -> {
+            supportMaxHeight = Math.min(supportMaxHeight, f.findLowestZ());
+
             boolean a = false;
             for (FacetGroup fg : facetGroups) {
                 if (fg.isPart(f)) {
-                    fg.add(f);
+                    fg.add(f.copy());
                     a = true;
                 }
             }
 
             if (!a) {
-                facetGroups.add(new FacetGroup(f));
+                facetGroups.add(new FacetGroup(f.copy()));
             }
         });
+
+        supportMaxHeight = roundDownToLayer(supportMaxHeight - minObjDistanceZ, printer);
         System.out.println("[" + timer.next() + "ms]");
 
+
         // unify overhang regions
-        System.out.print("Unifying overhang regions ");
+        System.out.print("Unifying overhang regions... ");
         facetGroups = FacetGroup.unifyFacetGroups(facetGroups);
-        System.out.println("[" + timer.next() + "ms]");
+        System.out.println(facetGroups.size() + " region(s) found [" + timer.next() + "ms]");
+
+
+        // Cluster regions
+        System.out.print("Clustering regions... ");
+        for (FacetGroup fg : facetGroups) {
+            for (Facet f : fg.getFacets()) {
+                f.p1.z = supportMaxHeight;
+                f.p2.z = supportMaxHeight;
+                f.p3.z = supportMaxHeight;
+            }
+        }
+        facetGroups = FacetClustering.cluster(facetGroups, maxDst);
+        System.out.println(facetGroups.size() +  " region(s) [" + timer.next() + "ms]");
+
 
         // generate support structure for every region
         System.out.print("Generating support structure ");
@@ -121,9 +160,9 @@ public class Generator {
         }
         System.out.println("[" + timer.next() + "ms]");
 
+
         // Slice and splice
         System.out.print("Slicing and splicing object ");
-        supportMaxHeight = Math.round(supportMaxHeight * 100) / 100D;
         Splicer.sliceAndSplice(object, structObj, supportMaxHeight, printer, fileOut);
         System.out.println("[" + timer.next() + "ms]");
 
@@ -165,8 +204,7 @@ public class Generator {
         Vector.sortByPolarAngle(fg.corners, m);
 
         // Max height
-        double h = roundDownToLayer(fg.lowestPosition() - minObjDistanceZ, printer);
-        supportMaxHeight = h;
+        double h = supportMaxHeight;
 
         // hopper height hT
         double hT = Double.MIN_VALUE;
@@ -203,7 +241,6 @@ public class Generator {
         List<Vector> cornerBases = new ArrayList<>(fg.corners.size());
         List<Vector> cornerDir = new ArrayList<>(fg.corners.size());
 
-        System.out.println(fg.corners.size());
         for (int i = 0; i < fg.corners.size(); i++) {
             Vector corner = fg.corners.get(i);
             Vector mc = new Vector(corner.x - m.x, corner.y - m.y, 0).norm();
@@ -236,21 +273,8 @@ public class Generator {
                     layer.add(new GCInstructions.G1(p.x, p.y, p.z));
                 }
             }
-            //
-            //
-            //
-            //
-            //
-            //
-            //
-            System.out.println(layer.getLength());
-            //
-            //
-            //
-            //
-            //
-            //
-            //
+
+
             if (hopperLayer % 2 == 0) {
                 double ymin = Double.MAX_VALUE;
                 double ymax = -Double.MAX_VALUE;
@@ -352,11 +376,16 @@ public class Generator {
                 GCLayer layer = structObj.newLayer(height, height == printer.layerHeight0 ? printer.layerHeight0 : printer.layerHeight, extruder);
 
                 int basisCount = (int) Math.floor((basisHeight - height) / (tanB * extruder.nozzleSize));
-                for (int i = basisCount - 1; i >= - pillarWidth + 1; i--) {
-                    GCStructures.circle(printer, layer, m.x, m.y, pillarRadius + i * extruder.nozzleSize, circleCorners);
-                }
 
-                height += printer.layerHeight;
+                if (basisCount > 0) {
+                    for (int i = basisCount - 1; i >= - pillarWidth + 1; i--) {
+                        GCStructures.circle(printer, layer, m.x, m.y, pillarRadius + i * extruder.nozzleSize, circleCorners);
+                    }
+
+                    height += printer.layerHeight;
+                } else {
+                    break;
+                }
             }
 
             return height;
@@ -390,7 +419,6 @@ public class Generator {
 
                 height += printer.layerHeight;
             }
-            ;
 
             return height + printer.layerHeight;
         }

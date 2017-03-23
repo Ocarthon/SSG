@@ -20,7 +20,7 @@ public class FacetGroup {
     }
 
     public FacetGroup(Facet facet) {
-        add(facet);
+        this(facet, null);
     }
 
     public FacetGroup copy() {
@@ -220,6 +220,11 @@ public class FacetGroup {
         }
 
         MathUtil.HIGH_TOLERANCE = false;
+
+        for (FacetGroup fg : facetGroups) {
+            fg.removeDoubles();
+        }
+
         return facetGroups;
     }
 

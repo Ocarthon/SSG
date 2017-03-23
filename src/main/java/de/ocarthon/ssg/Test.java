@@ -174,8 +174,6 @@ public class Test {
 
         object.centerObject();
         object.facets.stream().filter(f -> Vector.angle(f.n, zAxis) >= Math.toRadians(90 + angleSlider.getValue()) && !MathUtil.equals(f.findLowestZ(), 0, 1)).forEach(f -> {
-            double b = f.findLowestZ();
-
             boolean a = false;
             for (FacetGroup fg : facetGroups) {
                 if (fg.isPart(f)) {
@@ -199,18 +197,13 @@ public class Test {
             }
         }
 
-        facetGroups.forEach(facetGroup -> System.out.println(facetGroup.getArea()));
-
         double radius2 = 5 * 5;
-
         supportFacets.clear();
 
         List<Facet> flatFacets = new ArrayList<>();
 
         for (FacetGroup fg : facetGroups) {
-            fg.removeDoubles();
             fg.calculateHull();
-            System.out.println(facetGroups.get(0).corners);
 
             double lowZ = Double.MAX_VALUE;
             for (Facet f : fg.getFacets()) {
@@ -222,7 +215,7 @@ public class Test {
                 flatFacets.add(new Facet(f));
             }
 
-            Vector m = fg.center;
+            /*Vector m = fg.center;
 
             // Add sub corners
             Vector.sortByPolarAngle(fg.corners, m);
@@ -248,23 +241,29 @@ public class Test {
                 if (f.findLowestZ() < lowZ && Vector.angle(Vector.Z, f.n) <= Math.PI / 2 && MathUtil.dst2PointTriangle(m, f.p1, f.p2, f.p3) <= radius2) {
                     supportFacets.add(f);
                 }
-            }
+            }*/
         }
 
         splitFacets.clear();
 
         for (Facet f : flatFacets) {
-            f.p1.z = 0;
-            f.p2.z = 0;
-            f.p3.z = 0;
+            f.p1.z = 10;
+            f.p2.z = 10;
+            f.p3.z = 10;
 
             FacetClustering.splitFacet(f, splitFacets);
             //splitFacets.add(f);
         }
 
-        System.out.println("Split facets: " + splitFacets.size());
+        FacetGroup f = new FacetGroup(null);
+        f.getFacets().addAll(splitFacets);
+        facetGroups.add(f);
 
-        facetGroups = FacetClustering.clusterFacets(splitFacets, 2);
+        facetGroups = FacetClustering.cluster(facetGroups, 12);
+
+        //FacetClustering.cluster(splitFacets, 250);
+        //facetGroups = FacetClustering.clusterFacets(splitFacets);
+
         for (FacetGroup fg : facetGroups) {
             fg.color = Color.getHSBColor(random.nextFloat(), 1f, 1f);
             System.out.println(fg.getFacets().size());

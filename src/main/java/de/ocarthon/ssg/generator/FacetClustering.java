@@ -22,6 +22,16 @@ public class FacetClustering {
 
     private static final double CLUSTER_TOL = 1e-4;
 
+    public static List<FacetGroup> cluster(List<FacetGroup> fgs, double maxDistance) {
+        List<FacetGroup> clustered = new ArrayList<>(fgs.size());
+
+        for (FacetGroup fg : fgs) {
+            clustered.addAll(cluster(fg, maxDistance));
+        }
+
+        return clustered;
+    }
+
 
     public static List<FacetGroup> cluster(FacetGroup fg, double maxDistance) {
         double maxDst2 = Math.pow(maxDistance, 2);
@@ -45,11 +55,27 @@ public class FacetClustering {
             return fgList;
         }
 
-        return null;
+        return Collections.emptyList();
     }
 
     private static boolean isFacetGroupValid(FacetGroup fg, double maxDst2) {
-        return false;
+        // Check if all corners are within the max distance from the center
+        fg.calculateHull();
+
+        for (Vector corner : fg.corners) {
+            if (Vector.dst2XY(corner, fg.center) > maxDst2) {
+                return false;
+            }
+        }
+
+        // Check if the line between center and corner is inside the polygon
+        /*for (Vector corner : fg.corners) {
+
+
+        }*/
+
+
+        return true;
     }
 
     public static List<FacetGroup> clusterFacets(List<Facet> facets, int clusterCount) {
@@ -82,7 +108,7 @@ public class FacetClustering {
         return fgList;
     }
 
-    public static List<FacetGroup> clusterFacetsOnce(List<Facet> facets, int clusterCount) {
+    private static List<FacetGroup> clusterFacetsOnce(List<Facet> facets, int clusterCount) {
         if (facets.size() < clusterCount) {
             clusterCount = facets.size();
         }
@@ -101,7 +127,6 @@ public class FacetClustering {
                 fg.getFacets().clear();
             }
 
-            System.out.println(facets.size());
             for (Facet f : facets) {
                 List<Vector> vectors = f.toList();
 
@@ -139,12 +164,6 @@ public class FacetClustering {
                         finished = false;
                     }
                 }
-            }
-
-
-            int sum = 0;
-            for (FacetGroup fg : cluster) {
-                sum += fg.getFacets().size();
             }
 
             if (finished && depth > 1) {

@@ -47,12 +47,24 @@ public class Object3D {
         }
     }
 
+    public void applyScaleAndRotation() {
+        Matrix m = Matrix.rotationMatrix(rotation.x, rotation.y, rotation.z).multiply(Matrix.scaleMatrix(scale));
+        for (int i = 0; i < facets.size(); i++) {
+            facets.set(i, m.transform(facets.get(i)));
+        }
+
+        scale = 1;
+        rotation = new Vector(0, 0, 0);
+
+        centerObject();
+    }
+
     public byte[] writeObject() {
         // Facet -> 3 Vectors -> 3 Floats -> 4 Bytes (32 bit)
         byte[] vertices = new byte[facets.size() * 3 * 3 * 4];
-        Matrix rot = Matrix.rotationMatrix(rotation.x, rotation.y, rotation.z).multiply(Matrix.scaleMatrix(scale));
+        applyScaleAndRotation();
         for (int i = 0; i < facets.size(); i++) {
-            Facet f = rot.transform(facets.get(i));
+            Facet f = facets.get(i);
             writeVector(vertices, i * 3 * 3 * 4, f.p1);
             writeVector(vertices, i * 3 * 3 * 4 + 12, f.p2);
             writeVector(vertices, i * 3 * 3 * 4 + 24, f.p3);

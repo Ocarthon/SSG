@@ -157,13 +157,13 @@ public class Splicer {
 
                 if (gcLayer.hasContent()) {
                     write(fos, "; GC_LAYER%n");
+                    write(fos, "G92 E0%n");
                     Extruder ext = gcLayer.getExtruder();
                     if (activeExt != ext) {
                         performExtruderChange(fos, printer, activeExt, ext, primeTower, z);
                         activeExt = ext;
                     }
                     gcLayer.writeGCode(fos, printer);
-                    write(fos, "G92 E0%n");
                 }
 
                 objLayer++;
@@ -327,7 +327,9 @@ public class Splicer {
         write(out, "T%d%n", extruder.extruderNr);
 
         // Print prime tower
+        extruder.isPrimed = false;
         primeTower.printLayer(out, printer, extruder, 3 * printer.primeTowerSize);
+        extruder.isPrimed = true;
     }
 
     private static void performExtruderChange(OutputStream out, Printer printer, Extruder off, Extruder on, PrimeTower primeTower, double z) throws IOException {
