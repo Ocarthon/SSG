@@ -1,7 +1,9 @@
 package de.ocarthon.ssg.gcode;
 
+import static de.ocarthon.ssg.util.FileUtil.write;
 import de.ocarthon.ssg.curaengine.config.Extruder;
 import de.ocarthon.ssg.curaengine.config.Printer;
+import de.ocarthon.ssg.math.MathUtil;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -16,13 +18,13 @@ public class GCLayer {
 
     @Deprecated
     public GCLayer(double offset, double layerHeight) {
-        this.offset = offset;
+        this.offset = MathUtil.round(offset, 3);
         this.layerHeight = layerHeight;
 
     }
 
     public GCLayer(double offset, double layerHeight, Extruder extruder) {
-        this.offset = offset;
+        this.offset = MathUtil.round(offset, 3);
         this.layerHeight = layerHeight;
         this.extruder = extruder;
     }
@@ -37,6 +39,31 @@ public class GCLayer {
 
     public boolean hasContent() {
         return instructions.size() != 0;
+    }
+
+    public double writeGCode(OutputStream out, double eOffset, Printer printer) throws IOException {
+        write(out, "; GC_LAYER%n");
+
+        double e = calculateValues(printer, eOffset + printer.retractionAmount) - printer.retractionAmount;
+
+        boolean firstG1 = false;
+
+        for (GCInstruction instruction : getInstructions()) {
+            if (!firstG1 && instruction instanceof GCInstructions.G1) {
+                firstG1 = true;
+
+                write(out, "G1 F%f E%.4f%n", printer.retractionSpeed, eOffset + printer.retractionAmount);
+            }
+
+            write(out, "%s%n", instruction.convertToGCode(printer, extruder));
+        }
+
+        write(out, "G1 F%f E%.4f%n", printer.retractionSpeed, e);
+
+        // Reset to travel speed
+        write(out, "G0 F%f%n", printer.travelSpeed * 60);
+
+        return e;
     }
 
     public double calculateValues(Printer printer, double eOffset) {
@@ -86,26 +113,6 @@ public class GCLayer {
         }
 
         return e;
-    }
-
-    public void writeGCode(OutputStream out, Printer printer) throws IOException {
-        double e = calculateValues(printer, printer.retractionAmount);
-
-        boolean firstG1 = false;
-
-        for (GCInstruction instruction : getInstructions()) {
-            if (!firstG1 && instruction instanceof GCInstructions.G1) {
-                firstG1 = true;
-
-                out.write(String.format("G1 F1500 E%.5f%n", printer.retractionAmount).getBytes("UTF-8"));
-            }
-
-            out.write((instruction.convertToGCode(printer, getExtruder()) + "\n").getBytes("UTF-8"));
-        }
-
-        out.write(String.format("G1 F1500 E%.5f%n", e - printer.retractionAmount).getBytes("UTF-8"));
-
-        out.write(String.format("G0 F%f%n", printer.travelSpeed * 60).getBytes("UTF-8"));
     }
 
     public double getLength() {

@@ -9,6 +9,10 @@ public final class MathUtil {
     private MathUtil() {
     }
 
+    public static double round(double num, int pres) {
+        return Math.round(Math.pow(10, pres) * num) / Math.pow(10, pres);
+    }
+
     /**
      * calculates the distance between a point and a line
      *

@@ -59,6 +59,8 @@ public class CuraConfiguration {
                 continue;
             }
 
+            field.setAccessible(true);
+
             CuraSetting[] settings = field.getAnnotationsByType(CuraSetting.class);
             if (settings.length == 1) {
                 settingList.addSettings(createSetting(obj, field, settings[0]));

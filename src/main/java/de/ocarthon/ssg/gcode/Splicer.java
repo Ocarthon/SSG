@@ -1,36 +1,28 @@
 package de.ocarthon.ssg.gcode;
 
+import static de.ocarthon.ssg.util.FileUtil.write;
+
 import de.ocarthon.ssg.curaengine.Cura;
 import de.ocarthon.ssg.curaengine.CuraEngine;
 import de.ocarthon.ssg.curaengine.SliceProgress;
 import de.ocarthon.ssg.curaengine.config.Extruder;
 import de.ocarthon.ssg.curaengine.config.Printer;
-import de.ocarthon.ssg.formats.ObjectReader;
+import de.ocarthon.ssg.math.MathUtil;
 import de.ocarthon.ssg.math.Object3D;
 
 import java.io.*;
-import java.util.LinkedList;
-import java.util.List;
+import java.nio.charset.StandardCharsets;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class Splicer {
+    private static final boolean WRITE_MESSAGES = true;
+
     static final Pattern X_PATTERN = Pattern.compile("X(\\d*\\.*\\d*)");
     static final Pattern Y_PATTERN = Pattern.compile("Y(\\d*\\.*\\d*)");
     static final Pattern Z_PATTERN = Pattern.compile("Z(\\d*\\.*\\d*)");
     static final Pattern E_PATTERN = Pattern.compile("E(-*\\d*\\.*\\d*)");
-
-    public static void main(String[] args) throws Exception {
-        Object3D obj = ObjectReader.readObject(new File("Bogen.stl"));
-        obj.centerObject();
-
-        Printer printer = new Printer();
-        printer.addExtruder(new Extruder());
-
-        GCObject gcobj = new GCObject();
-
-        sliceAndSplice(obj, gcobj, 10, printer, new File("test2.gcode"));
-    }
 
     public static void sliceAndSplice(Object3D object3D, GCObject obj, double supportMinHeight, Printer printer, File file) throws IOException, InterruptedException {
         final SliceProgress[] sliceResult = new SliceProgress[1];
@@ -56,198 +48,217 @@ public class Splicer {
     }
 
     public static void splice(SliceProgress sliceMain, SliceProgress sliceWSup, double supportMinHeight, GCObject obj, Printer printer, File file) throws IOException {
-        addSupportLayersToGObj(obj, sliceWSup, supportMinHeight, printer);
+        addLayersToGObj(obj, sliceMain, printer.getExtruder(0));
+        addSupportLayersToGObj(obj, sliceWSup, supportMinHeight, printer, printer.getExtruder(printer.useDualPrint ? 1 : 0));
 
-        splice(sliceMain, obj, printer, file);
+        splice(obj, printer, file);
     }
 
-    public static void write(SliceProgress p, File file) throws IOException {
-        FileOutputStream fos = new FileOutputStream(file);
-
-        for (Cura.GCodeLayer layer : p.getLayers()) {
-            fos.write(layer.toByteArray());
-        }
-
-        fos.flush();
-        fos.close();
-    }
-
-    public static void splice(SliceProgress slice, GCObject obj, Printer printer, File file) throws IOException {
+    private static void splice(GCObject obj, Printer printer, File file) throws IOException {
         FileOutputStream fos = new FileOutputStream(file, false);
-
-        LinkedList<Cura.GCodeLayer> layers = slice.getLayers();
 
         Extruder mainExt = printer.getExtruder(0);
         Extruder secExt = printer.getExtruder(1);
-        Extruder activeExt = mainExt;
-        PrimeTower primeTower = new PrimeTower(printer);
+        Extruder actExt = mainExt;
 
-        // Heat up extruder
-        if (printer.useDualPrint) {
-            write(fos, "M104 T1 S%f%n", secExt.standbyTemperature);
-        }
+        List<GCLayer> actExtLayers = new ArrayList<>(2);
+        List<GCLayer> inactExtLayers = new ArrayList<>(2);
 
-        write(fos, "M109 T0 S%f%n", mainExt.printTemperature);
+        PrimeTower primeTower = new PrimeTower(printer, false);
 
-        if (printer.useDualPrint) {
-            write(fos, "M109 T1 S%f%n", secExt.standbyTemperature);
-        }
+        List<List<GCLayer>> layersByOffset = groupLayersByOffset(obj.getLayers());
 
-        // Start GCode
-        write(fos, "%s%n", printer.startGCode);
 
-        // Prime inactive extruder
-        if (printer.useDualPrint) {
-            primeExtruder(fos, printer, secExt, primeTower);
+        double e = writeStartCommands(fos, printer);;
 
-            write(fos, "G92 E0%n");
-            write(fos, "G1 F%f E%.5f%n", printer.nozzleSwitchRetractionSpeed, -printer.nozzleSwitchRetractionAmount + printer.retractionAmount);
-        }
 
-        primeExtruder(fos, printer, mainExt, primeTower);
-        write(fos, "G92 E0%n");
-        write(fos, "G1 F%f E%.5f%n", printer.retractionSpeed, printer.retractionAmount);
-        write(fos, "G92 E0%n");
+        int layerCount = layersByOffset.size();
+        int currentLayer = 0;
+        for (List<GCLayer> layers : layersByOffset) {
+            writeComment(fos, "Layer " + ++currentLayer + "/" + layerCount);
 
-        double lastE = 0;
-        int objLayer = 0;
+            // Sort layers into their corresponding lists
+            actExtLayers.clear();
+            inactExtLayers.clear();
 
-        boolean firstLayer = true;
+            for (GCLayer layer : layers) {
+                if (!layer.hasContent()) {
+                    continue;
+                }
 
-        for (Cura.GCodeLayer layer : layers) {
-            // Current layer split into lines
-            String[] lines = layer.getData().toString("UTF-8").split("\n");
-
-            // z-detection
-            double z = -1;
-            for (String line : lines) {
-                z = readDouble(Z_PATTERN, line);
-                if (z != -1) {
-                    break;
+                if (layer.getExtruder() == actExt) {
+                    actExtLayers.add(layer);
+                } else {
+                    inactExtLayers.add(layer);
                 }
             }
 
-            // e-detection
-            double e = -1;
-            for (int j = lines.length - 1; j > 0; j--) {
-                e = readDouble(E_PATTERN, lines[j]);
-                if (e != -1) {
-                    break;
-                }
+            // Write layers for currently active extruder
+            for (GCLayer layer : actExtLayers) {
+                e = layer.writeGCode(fos, e, printer);
             }
 
-            // Always print the first layer
-            // The first layer always start with a retraction move
-            if (firstLayer) {
-                firstLayer = false;
-                fos.write(layer.getData().toByteArray());
 
-                if (!endsWithRetraction(lines, printer)) {
-                    e -= printer.retractionAmount;
-                    write(fos, "G1 F%f E%.5f%n", printer.retractionSpeed, e);
+            if (!hasContent(inactExtLayers)) {
+                if (printer.usePrimeTower && printer.useDualPrint) {
+                    // prime
+                    e = primeTower.printLayer(fos, e, actExt);
                 }
-
-                lastE = e;
-
                 continue;
             }
 
-            while (obj.layerCount() > objLayer && obj.getLayer(objLayer).getOffset() <= z) {
-                GCLayer gcLayer = obj.getLayer(objLayer);
+            // Switch extruder
+            writeComment(fos, "Switching extruder");
+            e = switchExtruder(fos, e, primeTower, printer, actExt == mainExt ? secExt : mainExt);
+            actExt = actExt == mainExt ? secExt : mainExt;
 
-                if (gcLayer.hasContent()) {
-                    write(fos, "; GC_LAYER%n");
-                    write(fos, "G92 E0%n");
-                    Extruder ext = gcLayer.getExtruder();
-                    if (activeExt != ext) {
-                        performExtruderChange(fos, printer, activeExt, ext, primeTower, z);
-                        activeExt = ext;
-                    }
-                    gcLayer.writeGCode(fos, printer);
-                }
-
-                objLayer++;
+            // Write layers for currently active extruder
+            for (GCLayer layer : inactExtLayers) {
+                e = layer.writeGCode(fos, e, printer);
             }
-
-            if (activeExt != mainExt) {
-                performExtruderChange(fos, printer, activeExt, mainExt, primeTower, z);
-                activeExt = mainExt;
-            } else if (printer.usePrimeTower && z < primeTower.getCurrentHeight()){
-                primeTower.printLayer(fos, printer, activeExt, printer.primeTowerSize);
-            }
-
-            int j = 0;
-            int end;
-
-            if (!startsWithRetraction(lines, printer)) {
-                boolean retract = true;
-                while (!lines[j].startsWith("G1")) {
-                    write(fos, "%s%n", lines[j++]);
-
-                    if (j >= lines.length) {
-                        retract = false;
-                        break;
-                    }
-                }
-
-                if (retract) {
-                    write(fos, "G92 E%.5f%n", lastE - printer.retractionAmount);
-                    write(fos, "G1 F%f E%.5f%n", printer.retractionSpeed, lastE);
-
-                    write(fos, "%s%n", lines[j++]);
-                }
-            }
-
-            if (!endsWithRetraction(lines, printer)) {
-                end = lines.length - 1;
-                while (!lines[end].startsWith("G1")) {
-                    end--;
-
-                    if (end < 0) {
-                        break;
-                    }
-                }
-
-                if (end < 0) {
-                    for (int l = j; l < lines.length; l++) {
-                        write(fos, "%s%n", lines[l]);
-                    }
-                } else {
-                    for (int l = j; l <= end; l++) {
-                        write(fos, "%s%n", lines[l]);
-                    }
-
-                    write(fos, "G92 E%.5f%n", printer.retractionAmount);
-                    write(fos, "G1 F%f E0%n", printer.retractionSpeed);
-
-                    for (int l = end + 1; l < lines.length; l++) {
-                        write(fos, "%s%n", lines[l]);
-                    }
-                }
-            } else {
-                for (int l = j; l < lines.length; l++) {
-                    write(fos, "%s%n", lines[l]);
-                }
-            }
-
-            lastE = e;
         }
 
-        write(fos, "%s%n", printer.endGCode);
+        writeEndCommands(fos, printer);
+    }
 
+    private static boolean hasContent(List<GCLayer> layers) {
+        for (GCLayer layer : layers) {
+            if (layer.hasContent()) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static double switchExtruder(OutputStream out, double e, PrimeTower primeTower, Printer printer, Extruder inactExt) throws IOException {
+        // Move to nozzle switch position
+        write(out, "G0 F%f X%.5f Y%.5f%n", printer.travelSpeed * 60, printer.nozzleSwitchPosition.x, printer.nozzleSwitchPosition.y);
+
+        // Retract
+        write(out, "G1 F%f E%.5f%n", printer.nozzleSwitchRetractionSpeed, e - printer.nozzleSwitchRetractionAmount + printer.retractionAmount);
+
+        // Switch extruder
+        write(out, "T%d%n", inactExt.extruderNr);
+        write(out, "G92 E0%n");
+
+        write(out, "G1 F%f E%.5f%n", printer.nozzleSwitchRetractionSpeed, printer.nozzleSwitchRetractionAmount - printer.retractionAmount);
+
+        return primeTower.printLayer(out, printer.nozzleSwitchRetractionAmount - printer.retractionAmount, inactExt);
+    }
+
+    private static double writeStartCommands(FileOutputStream fos, Printer printer) throws IOException {
+        Extruder mainExt = printer.getExtruder(0);
+        Extruder secExt = printer.getExtruder(1);
+
+        writeComment(fos, "Heating extruder(s)");
+
+        // Heat to intermediate temperature
+        write(fos, "M104 T0 S%f%n", mainExt.intermediateTemperature);
+
+        if (printer.useDualPrint) {
+            write(fos, "M109 T1 S%f%n", secExt.intermediateTemperature);
+        }
+
+        write(fos, "M109 T0 S%f%n", mainExt.intermediateTemperature);
+
+
+        // Set printing temperature as target
+        write(fos, "M104 T0 S%f%n", mainExt.printTemperature);
+
+        if (printer.useDualPrint) {
+            write(fos, "M104 T1 S%f%n", secExt.printTemperature);
+        }
+
+        // Start GCode
+        writeComment(fos, "Starting...");
+        write(fos, "%s%n", printer.startGCode);
+
+        // Initial priming
+        writeComment(fos, "Initial priming");
+        PrimeTower initPrimeTower = new PrimeTower(printer, true);
+
+        if (printer.useDualPrint) {
+            write(fos, "T1%n");
+            write(fos, "G92 E0%n");
+            double e = initPrimeTower.printLayer(fos, 0, secExt);
+
+            write(fos, "G1 F%f E%.5f%n", printer.nozzleSwitchRetractionSpeed, e - printer.nozzleSwitchRetractionAmount + printer.retractionAmount);}
+
+        // Extruder 0
+        write(fos, "T0%n");
+        write(fos, "G92 E0%n");
+        return initPrimeTower.printLayer(fos, 0, mainExt);
+    }
+
+    private static void writeEndCommands(FileOutputStream fos, Printer printer) throws IOException {
+        // End GCode
+        write(fos, printer.endGCode);
+
+        // Set target temperature to 0
         write(fos, "M104 T0 S0%n");
 
         if (printer.useDualPrint) {
             write(fos, "M104 T1 S0%n");
         }
-
-        fos.flush();
-        fos.close();
     }
 
-    public static void addSupportLayersToGObj(GCObject obj, SliceProgress slice, double supportMinHeight, Printer printer) throws UnsupportedEncodingException {
-        Extruder ext = printer.getExtruder(printer.useDualPrint ? 1 : 0);
+    private static List<List<GCLayer>> groupLayersByOffset(List<GCLayer> layers) {
+        List<List<GCLayer>> layersByOffset = new LinkedList<>();
 
+        List<GCLayer> currentLayer = new ArrayList<>(2);
+        double currentHeight = layers.get(0).getOffset();
+
+        currentLayer.add(layers.get(0));
+
+        for (int i = 1; i < layers.size(); i++) {
+            GCLayer layer = layers.get(i);
+
+            if (MathUtil.equals(layer.getOffset(), currentHeight)) {
+                currentLayer.add(layer);
+            } else {
+                currentHeight = layers.get(i).getOffset();
+                layersByOffset.add(currentLayer);
+                currentLayer = new ArrayList<>(2);
+                currentLayer.add(layer);
+            }
+        }
+
+        return layersByOffset;
+    }
+
+    private static void addLayersToGObj(GCObject obj, SliceProgress slice, Extruder extruder) {
+        LinkedList<Cura.GCodeLayer> layers = slice.getLayers();
+        double lastE = 0;
+
+        for (Cura.GCodeLayer layer : layers) {
+            String sLayer = layer.getData().toString(StandardCharsets.UTF_8);
+            double z = readDouble(Z_PATTERN, sLayer);
+
+            if (z == -1) {
+                continue;
+            }
+
+            LinkedList<String> lineList = new LinkedList<>();
+            String[] lines = sLayer.split("\n");
+
+            Collections.addAll(lineList, lines);
+
+            obj.newGLayer(lineList, z, extruder.layerHeight, lastE, extruder);
+
+            Iterator<String> iter = lineList.descendingIterator();
+            while (iter.hasNext()) {
+                double e = readDouble(E_PATTERN, iter.next());
+
+                if (e != -1) {
+                    lastE = e;
+                    break;
+                }
+            }
+        }
+    }
+
+    private static void addSupportLayersToGObj(GCObject obj, SliceProgress slice, double supportMinHeight, Printer printer, Extruder ext) throws UnsupportedEncodingException {
         LinkedList<Cura.GCodeLayer> layers = slice.getLayers();
         for (int i1 = 0; i1 < layers.size(); i1++) {
             Cura.GCodeLayer layer = layers.get(i1);
@@ -257,17 +268,17 @@ public class Splicer {
                 continue;
             }
 
-            List<String> supportLines = new LinkedList<>();
+            LinkedList<String> supportLines = new LinkedList<>();
             String[] lines = sLayer.split("\n");
             int support = 0;
+            double e = -1;
+            boolean firstG1 = false;
             for (int i = 0; i < lines.length; i++) {
                 if (lines[i].startsWith(";TYPE:SUPPORT")) {
                     support = 1;
 
-
-                    double e = -1;
                     // Search last e
-                    for (int j = i - 2; j > 0; j--) {
+                    /*for (int j = i - 1; j > 0; j--) {
                         e = readDouble(E_PATTERN, lines[j]);
                         if (e != -1) {
                             break;
@@ -282,15 +293,20 @@ public class Splicer {
                                 break;
                             }
                         }
-                    }
+                    }*/
+
+                    // Search first e, as this will be a retraction move
 
                     supportLines.add(applyOffset(lines[i], ext));
-                    supportLines.add("G92 E" + e);
                     supportLines.add(applyOffset(lines[i - 1], ext) + " Z" + z);
 
                     continue;
                 } else if (lines[i].startsWith(";TYPE") && support == 1) {
                     break;
+                } else if (lines[i].startsWith("G1") && !firstG1) {
+                    firstG1 = true;
+                    e = readDouble(E_PATTERN, lines[i]) + printer.retractionAmount;
+                    continue;
                 }
 
                 if (support == 1) {
@@ -299,7 +315,7 @@ public class Splicer {
             }
 
 
-            obj.newGLayer(supportLines, z, ext.layerHeight, ext);
+            obj.newGLayer(supportLines, z, ext.layerHeight, e, ext);
         }
     }
 
@@ -321,73 +337,7 @@ public class Splicer {
         return line;
     }
 
-    private static void primeExtruder(OutputStream out, Printer printer, Extruder extruder, PrimeTower primeTower) throws IOException {
-        write(out, "; PRIMING EXTRUDER %d%n", extruder.extruderNr);
-
-        write(out, "T%d%n", extruder.extruderNr);
-
-        // Print prime tower
-        extruder.isPrimed = false;
-        primeTower.printLayer(out, printer, extruder, 3 * printer.primeTowerSize);
-        extruder.isPrimed = true;
-    }
-
-    private static void performExtruderChange(OutputStream out, Printer printer, Extruder off, Extruder on, PrimeTower primeTower, double z) throws IOException {
-        write(out, "; EXTRUDER CHANGE%n");
-
-        // Move to switch position
-        write(out, "G0 F%f X%.5f Y%.5f%n", printer.travelSpeed * 60, printer.nozzleSwitchPosition.x, printer.nozzleSwitchPosition.y);
-
-        // Retract
-        write(out, "G92 E0%n");
-        write(out, "G1 F%f E%.5f%n", printer.nozzleSwitchRetractionSpeed, -printer.nozzleSwitchRetractionAmount + printer.retractionAmount);
-
-
-        write(out, "T%d%n", on.extruderNr);
-
-        write(out, "G1 F%f E%.5f%n", printer.nozzleSwitchRetractionSpeed, printer.nozzleSwitchRetractionAmount - printer.retractionAmount);
-        write(out, "G92 E0%n");
-
-        if (printer.usePrimeTower) {
-            primeTower.printLayer(out, printer, on, printer.primeTowerSize);
-            write(out, "G92 E0%n");
-            write(out, "G0 F%f Z%.5f%n", printer.travelSpeed * 60, z);
-            write(out, "G0 F%f X%.5f Y%.5f%n", printer.travelSpeed * 60, printer.nozzleSwitchPosition.x, printer.nozzleSwitchPosition.y);
-        }
-    }
-
-    private static boolean startsWithRetraction(String[] lines, Printer printer) {
-        double e = -1;
-
-        for (int i = 0; i < Math.min(lines.length, 10); i++) {
-            String line = lines[i];
-            double tE = readDouble(E_PATTERN, line);
-            if (tE != -1) {
-                if (e == -1) {
-                    e = tE;
-                } else return tE - e == printer.retractionAmount;
-            }
-        }
-
-        return false;
-    }
-
-    private static boolean endsWithRetraction(String[] lines, Printer printer) {
-        double e = -1;
-
-        for (int i = lines.length - 1; i >= Math.max(lines.length - 10, 0); i--) {
-            double tE = readDouble(E_PATTERN, lines[i]);
-            if (tE != -1) {
-                if (e == -1) {
-                    e = tE;
-                } else return e - tE == printer.retractionAmount;
-            }
-        }
-
-        return false;
-    }
-
-    private static double readDouble(Pattern pattern, String line) {
+    static double readDouble(Pattern pattern, String line) {
         Matcher m = pattern.matcher(line);
         if (m.find()) {
             String s = m.group().trim().substring(1);
@@ -401,7 +351,11 @@ public class Splicer {
         }
     }
 
-    private static void write(OutputStream out, String format, Object... args) throws IOException {
-        out.write(String.format(format, args).getBytes("UTF-8"));
+    private static void writeComment(OutputStream out, String comment) throws IOException {
+        write(out, "; %s%n", comment);
+
+        if (WRITE_MESSAGES) {
+            write(out, "M117 %s%n", comment);
+        }
     }
 }

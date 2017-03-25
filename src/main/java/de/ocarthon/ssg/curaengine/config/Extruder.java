@@ -3,7 +3,7 @@ package de.ocarthon.ssg.curaengine.config;
 public class Extruder {
     public int extruderNr = 0;
     
-    public boolean isPrimed = true;
+    public boolean isPrimed = false;
 
     @CuraSetting(key = "machine_nozzle_size")
     public double nozzleSize = 0.35;
@@ -21,6 +21,9 @@ public class Extruder {
 
     @CuraSetting(key = "material_print_temperature")
     public double printTemperature = 195;
+
+    // intermediate temperature to prevent thermal runaway
+    public double intermediateTemperature = 205;
 
     public double standbyTemperature = 195;
 

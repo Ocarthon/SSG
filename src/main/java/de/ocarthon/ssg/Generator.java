@@ -46,14 +46,13 @@ public class Generator {
     private static final double basisRadius = 4;
 
     // Distanz zwischen Füllungslinien
-    private static final double infillDistance = 4;
+    private static final double infillDistance = 8;
 
     private static final int connectingLayers = 10;
 
     private static final double minArea = 1;
 
     private static final double maxDst = 40;
-
 
 
 
@@ -73,9 +72,8 @@ public class Generator {
 
         // Printer configuration
         Printer printer = Printer.k8400();
-        printer.useDualPrint = false;
-        printer.usePrimeTower = false;
-        printer.infillDensity = 4;
+        printer.useDualPrint = true;
+        printer.infillDensity = 3;
 
 
         // Create filename
