@@ -14,7 +14,7 @@ public class FacetClustering {
     // max distance to center radius squared
     private static final double MAX_R2 = 1;
 
-    private static final int MAX_CLUSTER = 10;
+    private static final int MAX_CLUSTER = 20;
 
     private static final int MAX_TRIES = 1;
 
@@ -42,9 +42,15 @@ public class FacetClustering {
             return fgList;
         }
 
+        List<Facet> splitFacets = new ArrayList<>(fg.getFacets().size());
+
+        for (Facet f : fg.getFacets()) {
+            splitFacet(f, splitFacets);
+        }
+
         clusterLoop:
         for (int i = 2; i <= MAX_CLUSTER; i++) {
-            List<FacetGroup> fgList = clusterFacets(fg.getFacets(), i);
+            List<FacetGroup> fgList = clusterFacets(splitFacets, i);
 
             for (FacetGroup fg1 : fgList) {
                 if (!isFacetGroupValid(fg1, maxDst2)) {
@@ -68,11 +74,6 @@ public class FacetClustering {
             }
         }
 
-        // Check if the line between center and corner is inside the polygon
-        /*for (Vector corner : fg.corners) {
-
-
-        }*/
 
 
         return true;

@@ -1,4 +1,4 @@
-package de.ocarthon.ssg;
+package de.ocarthon.ssg.generator;
 
 import de.ocarthon.ssg.curaengine.config.Extruder;
 import de.ocarthon.ssg.curaengine.config.Printer;
@@ -72,7 +72,7 @@ public class Generator {
 
         // Printer configuration
         Printer printer = Printer.k8400();
-        printer.useDualPrint = true;
+        printer.useDualPrint = false;
         printer.infillDensity = 3;
 
 

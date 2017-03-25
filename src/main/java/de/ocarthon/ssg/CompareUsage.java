@@ -1,5 +1,7 @@
 package de.ocarthon.ssg;
 
+import de.ocarthon.ssg.generator.Generator;
+
 import java.io.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
