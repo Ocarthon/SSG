@@ -1,6 +1,6 @@
 package de.ocarthon.ssg;
 
-import de.ocarthon.ssg.generator.Generator;
+import de.ocarthon.ssg.generator.SupportGenerator;
 
 import java.io.*;
 import java.util.regex.Matcher;
@@ -16,7 +16,7 @@ public class CompareUsage {
 
         String fileName = args[0];
 
-        Generator.main(new String[]{fileName, "cmpusg_struc.gcode"});
+        SupportGenerator.main(new String[]{fileName, "cmpusg_struc.gcode"});
         Thread.sleep(3000);
         Slice.main(new String[]{fileName, "cmpusg_norm.gcode", "false"});
         Thread.sleep(3000);

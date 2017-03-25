@@ -6,10 +6,10 @@ import de.ocarthon.ssg.curaengine.config.Printer;
 public class GCInstructions {
 
     public static class G0 implements GCInstruction {
-        double x;
-        double y;
-        double z;
-        double f = -1;
+        public double x;
+        public double y;
+        public double z;
+        public double f = -1;
 
         public G0(double x, double y, double z, double f) {
             this.x = x;
@@ -36,7 +36,7 @@ public class GCInstructions {
     }
 
     public static class G1 extends G0 {
-        double e;
+        public double e;
 
         public G1(double x, double y, double z) {
             super(x, y, z);
@@ -57,8 +57,8 @@ public class GCInstructions {
     }
 
     public static class G2 extends G1 {
-        double i;
-        double j;
+        public double i;
+        public double j;
 
         @Override
         public String convertToGCode(Printer printer, Extruder extruder) {

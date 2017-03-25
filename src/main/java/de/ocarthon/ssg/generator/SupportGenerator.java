@@ -4,7 +4,6 @@ import de.ocarthon.ssg.curaengine.config.Extruder;
 import de.ocarthon.ssg.curaengine.config.Printer;
 import de.ocarthon.ssg.formats.ObjectReader;
 import de.ocarthon.ssg.gcode.*;
-import de.ocarthon.ssg.generator.FacetClustering;
 import de.ocarthon.ssg.math.*;
 
 import java.io.File;
@@ -13,7 +12,7 @@ import java.util.List;
 import java.util.Locale;
 
 @SuppressWarnings("Duplicates")
-public class Generator {
+public class SupportGenerator {
     private static List<FacetGroup> facetGroups = new ArrayList<>(2);
     private static Object3D object;
 
@@ -24,12 +23,13 @@ public class Generator {
     private static final double alphaMax = 45;
 
     // Minimaler Abstand von Stützstruktur zu Objekt
-    private static final double minObjDistanceZ = 0.2;
+    private static final double minObjDistanceZ = 1;
 
     private static final double minObjDistanceXY = 0.8;
 
     // Radius des Stammes
-    private static final double pillarRadius = 8;
+    private static final double minPillarRadius = 5;
+    private static final double pillarOptimisationStep = 0.1;
 
     // Breite des Stammes in Bahnen
     private static final int pillarWidth = 1;
@@ -61,7 +61,6 @@ public class Generator {
 
     public static void main(String[] args) throws Exception {
         Locale.setDefault(Locale.ENGLISH);
-
 
         // Arg checking
         if (args == null || args.length == 0) {
@@ -99,7 +98,7 @@ public class Generator {
         object = ObjectReader.readObject(file);
         object.centerObject();
 
-        object.scale = 1.5;
+        //object.scale = 1.5;
         object.applyScaleAndRotation();
         System.out.println("[" + timer.next() + "ms]");
 
@@ -153,7 +152,7 @@ public class Generator {
         System.out.print("Generating support structure ");
         for (FacetGroup fg : facetGroups) {
             if (fg.getArea() >= minArea) {
-                generateStructure(fg.copy(), structObj, printer);
+                structObj.merge(generateStructure(fg.copy(), printer));
             }
         }
         System.out.println("[" + timer.next() + "ms]");
@@ -170,7 +169,65 @@ public class Generator {
         fos.close();*/
     }
 
-    public static void generateStructure(FacetGroup fg, GCObject structObj, Printer printer) {
+    private static GCObject generateStructure(FacetGroup fg, Printer printer) {
+        double radius = minPillarRadius - pillarOptimisationStep;
+
+        GCObject best = null;
+        double bestScore = Double.MAX_VALUE;
+        double bestRadius = 0;
+
+        while (true) {
+            radius += pillarOptimisationStep;
+
+            GCObject obj = generateStructure(fg, printer, radius);
+
+            if (best == null) {
+                best = obj;
+                bestScore = calculateScoreForGCObject(obj);
+            } else {
+                double score = calculateScoreForGCObject(obj);
+
+                if (score < bestScore) {
+                    best = obj;
+                    bestScore = score;
+                    bestRadius = radius;
+                } else {
+                    return best;
+                }
+            }
+        }
+    }
+
+    private static double calculateScoreForGCObject(GCObject obj) {
+        double score = 0;
+
+        for (GCLayer layer : obj.getLayers()) {
+            Vector position = new Vector(0, 0, 0);
+
+            for (GCInstruction instruction : layer.getInstructions()) {
+                if (!(instruction instanceof GCInstructions.G0)) {
+                    continue;
+                }
+
+                GCInstructions.G0 g0 = ((GCInstructions.G0) instruction);
+
+                if (instruction instanceof GCInstructions.G2) {
+                    GCInstructions.G2 g2 = ((GCInstructions.G2) instruction);
+                    score += 4 * Math.pow(Math.PI, 2) * (Math.pow(position.x - g2.i, 2) + Math.pow(position.y - g2.j, 2));
+                } else if (instruction instanceof GCInstructions.G1) {
+                    score += Math.pow(position.x - g0.x, 2) + Math.pow(position.y - g0.y, 2);
+                }
+
+                position.set(g0.x, g0.y, 0);
+            }
+        }
+
+        return score;
+    }
+
+    private static GCObject generateStructure(FacetGroup fg, Printer printer, double pillarRadius) {
+        GCObject obj = new GCObject();
+
         Extruder extruder = printer.getExtruder(0);
 
         // Searches corners
@@ -222,9 +279,9 @@ public class Generator {
 
         hT = roundDownToLayer(hT / Math.tan(Math.toRadians(alphaMax)), printer);
 
-        double pillarHeight = generateBasis(fg, structObj, printer, printer.useDualPrint ? printer.getExtruder(1) : extruder);
+        double pillarHeight = generateBasis(fg, obj, pillarRadius, printer, printer.useDualPrint ? printer.getExtruder(1) : extruder);
         while (pillarHeight <= (h - hT)) {
-            GCLayer layer = structObj.newLayer(pillarHeight, printer.layerHeight, extruder);
+            GCLayer layer = obj.newLayer(pillarHeight, printer.layerHeight, extruder);
 
             // Stamm
             for (int i = 0; i < pillarWidth; i++) {
@@ -253,7 +310,7 @@ public class Generator {
         int hopperLayer = 1;
         while (hopperLayer * printer.layerHeight < hT) {
             double hopperHeight = (hopperLayer) * printer.layerHeight;
-            GCLayer layer = structObj.newLayer(h - hT + hopperHeight, printer.layerHeight, extruder);
+            GCLayer layer = obj.newLayer(h - hT + hopperHeight, printer.layerHeight, extruder);
             List<Vector> currentCorners = new ArrayList<>();
 
             for (int i = 0; i <= fg.corners.size(); i++) {
@@ -338,9 +395,11 @@ public class Generator {
             }
             hopperLayer++;
         }
+
+        return obj;
     }
 
-    public static double generateBasis(FacetGroup fg, GCObject structObj, Printer printer, Extruder extruder) {
+    private static double generateBasis(FacetGroup fg, GCObject structObj, double pillarRadius, Printer printer, Extruder extruder) {
         double r2 = pillarRadius * pillarRadius;
 
         double lowZ = Double.MAX_VALUE;

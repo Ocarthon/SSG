@@ -16,7 +16,7 @@ public class FacetClustering {
 
     private static final int MAX_CLUSTER = 20;
 
-    private static final int MAX_TRIES = 1;
+    private static final int MAX_TRIES = 10;
 
     private static final int MAX_DEPTH = 500;
 

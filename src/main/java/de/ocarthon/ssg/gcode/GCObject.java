@@ -6,6 +6,7 @@ import de.ocarthon.ssg.curaengine.config.Printer;
 import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -31,7 +32,19 @@ public class GCObject {
 
     public void addLayer(GCLayer layer) {
         layers.add(layer);
+        sort();
+    }
+
+    public void sort() {
         layers.sort((o1, o2) -> o1.getOffset() < o2.getOffset() ? -1 : o1.getOffset() == o2.getOffset() ? (o1.getClass() == GCLayer.class ? 1 : -1) : 1);
+    }
+
+    public void merge(GCObject obj) {
+        layers.addAll(obj.getLayers());
+
+        layers.removeIf(gcLayer -> !gcLayer.hasContent());
+
+        sort();
     }
 
     public int layerCount() {
