@@ -4,6 +4,7 @@ import de.ocarthon.ssg.curaengine.config.Extruder;
 import de.ocarthon.ssg.curaengine.config.Printer;
 import de.ocarthon.ssg.formats.ObjectReader;
 import de.ocarthon.ssg.gcode.*;
+import de.ocarthon.ssg.gcode.Splicer;
 import de.ocarthon.ssg.math.*;
 
 import java.io.File;
@@ -174,7 +175,6 @@ public class SupportGenerator {
 
         GCObject best = null;
         double bestScore = Double.MAX_VALUE;
-        double bestRadius = 0;
 
         while (true) {
             radius += pillarOptimisationStep;
@@ -190,7 +190,6 @@ public class SupportGenerator {
                 if (score < bestScore) {
                     best = obj;
                     bestScore = score;
-                    bestRadius = radius;
                 } else {
                     return best;
                 }
@@ -216,9 +215,8 @@ public class SupportGenerator {
                     score += 4 * Math.pow(Math.PI, 2) * (Math.pow(position.x - g2.i, 2) + Math.pow(position.y - g2.j, 2));
                 } else if (instruction instanceof GCInstructions.G1) {
                     score += Math.pow(position.x - g0.x, 2) + Math.pow(position.y - g0.y, 2);
+                    position.set(g0.x, g0.y, 0);
                 }
-
-                position.set(g0.x, g0.y, 0);
             }
         }
 

@@ -26,7 +26,7 @@ public class Test {
     private static JSlider angleSlider;
 
     private static boolean showRegions = true;
-    private static boolean showHull = false;
+    private static boolean showHull = true;
     private static boolean showCorners = false;
     private static boolean showSupportFacets = false;
     private static boolean showSplitFacets = false;
@@ -90,7 +90,9 @@ public class Test {
                 }
 
                 if (showRegions ||showHull || showCorners) {
-                    for (FacetGroup fg : facetGroups) {
+                    for (int i = 0; i < facetGroups.size(); i++) {
+
+                        FacetGroup fg = facetGroups.get(i);
                         if (showRegions) {
                             g2.setColor(fg.color);
                             for (Facet f : fg.getFacets()) {
@@ -100,8 +102,9 @@ public class Test {
                         }
 
                         if (showHull) {
+                            int c = 0;
                             for (Vector v : fg.corners) {
-                                drawCircle(g2, rotation.transform(v), 10, Color.RED);
+                                drawCircle(g2, rotation.transform(v), 10, Color.getHSBColor(c++ / 180f, 1f, 1f));
                             }
                             Vector b = fg.center;
 
@@ -168,7 +171,7 @@ public class Test {
     }
 
     public static void refreshFacets() {
-        Random random = new Random(42);
+        Random random = new Random();
 
         facetGroups.clear();
 
@@ -243,7 +246,7 @@ public class Test {
                 }
             }*/
         }
-
+        System.out.println("Test");
         splitFacets.clear();
 
         for (Facet f : flatFacets) {
@@ -258,15 +261,23 @@ public class Test {
         FacetGroup f = new FacetGroup(null);
         f.getFacets().addAll(splitFacets);
         facetGroups.add(f);
-
-        facetGroups = FacetClustering.cluster(facetGroups, 12);
-
+        System.out.println(facetGroups);
+        facetGroups = FacetClustering.cluster(facetGroups, 25);
+        System.out.println(facetGroups);
         //FacetClustering.cluster(splitFacets, 250);
         //facetGroups = FacetClustering.clusterFacets(splitFacets);
 
+        points.clear();
+
         for (FacetGroup fg : facetGroups) {
-            fg.color = Color.getHSBColor(random.nextFloat(), 1f, 1f);
-            System.out.println(fg.getFacets().size());
+            fg.removeDoubles();
+            fg.calculateHull();
         }
+
+        for (FacetGroup fg : facetGroups) {
+            points.addAll(fg.corners);
+            fg.color = Color.getHSBColor(random.nextFloat(), 1f, 1f);
+        }
+
     }
 }

@@ -1,5 +1,7 @@
 package de.ocarthon.ssg.gcode;
 
+import static de.ocarthon.ssg.gcode.GCUtil.E_PATTERN;
+import static de.ocarthon.ssg.gcode.GCUtil.readDouble;
 import static de.ocarthon.ssg.util.FileUtil.write;
 import de.ocarthon.ssg.curaengine.config.Extruder;
 import de.ocarthon.ssg.curaengine.config.Printer;
@@ -11,7 +13,7 @@ import java.util.LinkedList;
 import java.util.List;
 
 public class GCCLayer extends GCLayer {
-    private LinkedList<String> gCode;
+    LinkedList<String> gCode;
     double initialE = 0;
 
     GCCLayer(LinkedList<String> gCode, double offset, double layerHeight, Extruder extruder) {
@@ -57,7 +59,7 @@ public class GCCLayer extends GCLayer {
         double endE = -1;
         Iterator<String> iter = gCode.descendingIterator();
         while (iter.hasNext()) {
-            double e = Splicer.readDouble(Splicer.E_PATTERN, iter.next());
+            double e = readDouble(E_PATTERN, iter.next());
 
             if (e != -1) {
                 endE = e;
@@ -88,7 +90,7 @@ public class GCCLayer extends GCLayer {
                 break;
             }
 
-            double tE = Splicer.readDouble(Splicer.E_PATTERN, iter.next());
+            double tE = readDouble(E_PATTERN, iter.next());
             if (tE != -1) {
                 if (e == -1) {
                     e = tE;

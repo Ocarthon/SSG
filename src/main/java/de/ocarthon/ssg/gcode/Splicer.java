@@ -1,5 +1,8 @@
 package de.ocarthon.ssg.gcode;
 
+import static de.ocarthon.ssg.gcode.GCUtil.E_PATTERN;
+import static de.ocarthon.ssg.gcode.GCUtil.Z_PATTERN;
+import static de.ocarthon.ssg.gcode.GCUtil.readDouble;
 import static de.ocarthon.ssg.util.FileUtil.write;
 
 import de.ocarthon.ssg.curaengine.Cura;
@@ -9,20 +12,13 @@ import de.ocarthon.ssg.curaengine.config.Extruder;
 import de.ocarthon.ssg.curaengine.config.Printer;
 import de.ocarthon.ssg.math.MathUtil;
 import de.ocarthon.ssg.math.Object3D;
+import de.ocarthon.ssg.math.Vector;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 public class Splicer {
-    private static final boolean WRITE_MESSAGES = true;
-
-    static final Pattern X_PATTERN = Pattern.compile("X(\\d*\\.*\\d*)");
-    static final Pattern Y_PATTERN = Pattern.compile("Y(\\d*\\.*\\d*)");
-    static final Pattern Z_PATTERN = Pattern.compile("Z(\\d*\\.*\\d*)");
-    static final Pattern E_PATTERN = Pattern.compile("E(-*\\d*\\.*\\d*)");
 
     public static void sliceAndSplice(Object3D object3D, GCObject obj, double supportMinHeight, Printer printer, File file) throws IOException, InterruptedException {
         final SliceProgress[] sliceResult = new SliceProgress[1];
@@ -71,11 +67,12 @@ public class Splicer {
 
         double e = writeStartCommands(fos, printer);;
 
+        Vector position = new Vector(0, 0, 0);
 
         int layerCount = layersByOffset.size();
         int currentLayer = 0;
         for (List<GCLayer> layers : layersByOffset) {
-            writeComment(fos, "Layer " + ++currentLayer + "/" + layerCount);
+            GCUtil.writeComment(fos, "Layer " + ++currentLayer + "/" + layerCount);
 
             // Sort layers into their corresponding lists
             actExtLayers.clear();
@@ -93,6 +90,9 @@ public class Splicer {
                 }
             }
 
+            // Sort layers for active extruder
+            position = PathPlanning.searchBestPath(position, actExtLayers);
+
             // Write layers for currently active extruder
             for (GCLayer layer : actExtLayers) {
                 e = layer.writeGCode(fos, e, printer);
@@ -108,9 +108,13 @@ public class Splicer {
             }
 
             // Switch extruder
-            writeComment(fos, "Switching extruder");
+            GCUtil.writeComment(fos, "Switching extruder");
             e = switchExtruder(fos, e, primeTower, printer, actExt == mainExt ? secExt : mainExt);
             actExt = actExt == mainExt ? secExt : mainExt;
+            position.set(printer.nozzleSwitchPosition);
+
+            // Sort layers for currently inactive extruder
+            position = PathPlanning.searchBestPath(position, inactExtLayers);
 
             // Write layers for currently active extruder
             for (GCLayer layer : inactExtLayers) {
@@ -151,7 +155,7 @@ public class Splicer {
         Extruder mainExt = printer.getExtruder(0);
         Extruder secExt = printer.getExtruder(1);
 
-        writeComment(fos, "Heating extruder(s)");
+        GCUtil.writeComment(fos, "Heating extruder(s)");
 
         // Heat to intermediate temperature
         write(fos, "M104 T0 S%f%n", mainExt.intermediateTemperature);
@@ -171,11 +175,11 @@ public class Splicer {
         }
 
         // Start GCode
-        writeComment(fos, "Starting...");
+        GCUtil.writeComment(fos, "Starting...");
         write(fos, "%s%n", printer.startGCode);
 
         // Initial priming
-        writeComment(fos, "Initial priming");
+        GCUtil.writeComment(fos, "Initial priming");
         PrimeTower initPrimeTower = new PrimeTower(printer, true);
 
         if (printer.useDualPrint) {
@@ -297,8 +301,8 @@ public class Splicer {
 
                     // Search first e, as this will be a retraction move
 
-                    supportLines.add(applyOffset(lines[i], ext));
-                    supportLines.add(applyOffset(lines[i - 1], ext) + " Z" + z);
+                    supportLines.add(GCUtil.applyOffset(lines[i], ext));
+                    supportLines.add(GCUtil.applyOffset(lines[i - 1], ext) + " Z" + z);
 
                     continue;
                 } else if (lines[i].startsWith(";TYPE") && support == 1) {
@@ -310,7 +314,7 @@ public class Splicer {
                 }
 
                 if (support == 1) {
-                    supportLines.add(applyOffset(lines[i], ext));
+                    supportLines.add(GCUtil.applyOffset(lines[i], ext));
                 }
             }
 
@@ -319,43 +323,4 @@ public class Splicer {
         }
     }
 
-    private static String applyOffset(String line, Extruder extruder) {
-        if (!line.startsWith("G1") && !line.startsWith("G0") && !line.startsWith("G2")) {
-            return line;
-        }
-
-        if (extruder.nozzleOffsetX == 0 && extruder.nozzleOffsetY == 0) {
-            return line;
-        }
-
-        double x = readDouble(X_PATTERN, line) + extruder.nozzleOffsetX;
-        double y = readDouble(Y_PATTERN, line) + extruder.nozzleOffsetY;
-
-        line = X_PATTERN.matcher(line).replaceFirst(String.format("X%.5f", x));
-        line = Y_PATTERN.matcher(line).replaceFirst(String.format("Y%.5f", y));
-
-        return line;
-    }
-
-    static double readDouble(Pattern pattern, String line) {
-        Matcher m = pattern.matcher(line);
-        if (m.find()) {
-            String s = m.group().trim().substring(1);
-            if (s.length() == 0) {
-                return -1;
-            } else {
-                return Double.parseDouble(s);
-            }
-        } else {
-            return -1;
-        }
-    }
-
-    private static void writeComment(OutputStream out, String comment) throws IOException {
-        write(out, "; %s%n", comment);
-
-        if (WRITE_MESSAGES) {
-            write(out, "M117 %s%n", comment);
-        }
-    }
 }

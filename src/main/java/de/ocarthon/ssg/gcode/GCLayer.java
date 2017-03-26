@@ -4,6 +4,7 @@ import static de.ocarthon.ssg.util.FileUtil.write;
 import de.ocarthon.ssg.curaengine.config.Extruder;
 import de.ocarthon.ssg.curaengine.config.Printer;
 import de.ocarthon.ssg.math.MathUtil;
+import de.ocarthon.ssg.math.Vector;
 
 import java.io.IOException;
 import java.io.OutputStream;
