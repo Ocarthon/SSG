@@ -3,9 +3,18 @@ package de.ocarthon.ssg.generator;
 import de.ocarthon.ssg.curaengine.config.Extruder;
 import de.ocarthon.ssg.curaengine.config.Printer;
 import de.ocarthon.ssg.formats.ObjectReader;
-import de.ocarthon.ssg.gcode.*;
-import de.ocarthon.ssg.gcode.Splicer;
-import de.ocarthon.ssg.math.*;
+import de.ocarthon.ssg.gcode.GCInstruction;
+import de.ocarthon.ssg.gcode.GCInstructions;
+import de.ocarthon.ssg.gcode.GCLayer;
+import de.ocarthon.ssg.gcode.GCObject;
+import de.ocarthon.ssg.gcode.GCStructures;
+import de.ocarthon.ssg.gcode.splicer.Splicer;
+import de.ocarthon.ssg.math.Facet;
+import de.ocarthon.ssg.math.FacetGroup;
+import de.ocarthon.ssg.math.MathUtil;
+import de.ocarthon.ssg.math.Object3D;
+import de.ocarthon.ssg.math.Timer;
+import de.ocarthon.ssg.math.Vector;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -19,9 +28,6 @@ public class SupportGenerator {
 
     // Maximaler Winkel zwischen Ecken
     private static final double maxCornerAngle = Math.toRadians(20);
-
-    // Maximaler Überhangswinkel
-    private static final double alphaMax = 45;
 
     // Minimaler Abstand von Stützstruktur zu Objekt
     private static final double minObjDistanceZ = 1;
@@ -54,7 +60,6 @@ public class SupportGenerator {
     private static final double minArea = 1;
 
     private static final double maxDst = 40;
-
 
 
     private static double supportMaxHeight = 0;
@@ -110,7 +115,7 @@ public class SupportGenerator {
         // Overhang detection
         System.out.print("Searching overhangs ");
         supportMaxHeight = Double.MAX_VALUE;
-        object.facets.stream().filter(f -> Vector.angle(f.n, Vector.Z) >= Math.toRadians(90 + alphaMax) && !MathUtil.equals(f.findLowestZ(), 0)).forEach(f -> {
+        object.facets.stream().filter(f -> Vector.angle(f.n, Vector.Z) >= Math.toRadians(90 + printer.supportAngle) && !MathUtil.equals(f.findLowestZ(), 0)).forEach(f -> {
             supportMaxHeight = Math.min(supportMaxHeight, f.findLowestZ());
 
             boolean a = false;
@@ -146,7 +151,7 @@ public class SupportGenerator {
             }
         }
         facetGroups = FacetClustering.cluster(facetGroups, maxDst);
-        System.out.println(facetGroups.size() +  " region(s) [" + timer.next() + "ms]");
+        System.out.println(facetGroups.size() + " region(s) [" + timer.next() + "ms]");
 
 
         // generate support structure for every region
@@ -275,7 +280,7 @@ public class SupportGenerator {
             }
         }
 
-        hT = roundDownToLayer(hT / Math.tan(Math.toRadians(alphaMax)), printer);
+        hT = roundDownToLayer(hT / Math.tan(Math.toRadians(printer.supportAngle)), printer);
 
         double pillarHeight = generateBasis(fg, obj, pillarRadius, printer, printer.useDualPrint ? printer.getExtruder(1) : extruder);
         while (pillarHeight <= (h - hT)) {
@@ -433,7 +438,7 @@ public class SupportGenerator {
                 int basisCount = (int) Math.floor((basisHeight - height) / (tanB * extruder.nozzleSize));
 
                 if (basisCount > 0) {
-                    for (int i = basisCount - 1; i >= - pillarWidth + 1; i--) {
+                    for (int i = basisCount - 1; i >= -pillarWidth + 1; i--) {
                         GCStructures.circle(printer, layer, m.x, m.y, pillarRadius + i * extruder.nozzleSize, circleCorners);
                     }
 

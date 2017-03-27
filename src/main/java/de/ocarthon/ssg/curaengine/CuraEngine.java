@@ -16,19 +16,49 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class CuraEngine {
+    /**
+     * List of filenames that are required to get CuraEngine running
+     */
     private static final String[] curaEngineFiles = new String[]{"CuraEngine.exe",
             "libgcc_s_seh-1.dll", "libstdc++-6.dll", "libwinpthread-1.dll",
             "fdmextruder.def.json", "fdmprinter.def.json"};
+
+    /**
+     * Directory where the CuraEngine is extracted to
+     */
     private static File curaEngineDir;
+
+    /**
+     * CuraEngine process if one exists
+     */
     private Process curaEngineProc;
 
+    /**
+     * ArcusSocket to communicate with the CuraEngine
+     */
     private ArcusSocket socket;
+
+    /**
+     * Registered listener
+     */
     private List<CuraEngineListener> listeners = new ArrayList<>(2);
 
+    /**
+     * port that will be used to communicate
+     */
     private int port;
+
+    /**
+     * Current slice configuration
+      */
     private Cura.Slice sliceConfiguration;
+
+    /**
+     * Current slice progress
+     */
     private SliceProgress progress;
 
+    // Extract the Engine
     static {
         curaEngineDir = new File(System.getProperty("user.home"), "/.ssg/CuraEngine");
 
@@ -43,10 +73,6 @@ public class CuraEngine {
         } catch (IOException e) {
             e.printStackTrace();
         }
-    }
-
-    public CuraEngine() {
-        this(0);
     }
 
     public CuraEngine(int port) {
@@ -81,11 +107,8 @@ public class CuraEngine {
         ProcessBuilder pb = new ProcessBuilder(curaEngineDir.getAbsolutePath() + "/CuraEngine",
                 "connect", "127.0.0.1:" + socket.getPort(), "-v", "-j",
                 curaEngineDir.getAbsolutePath() + "/fdmprinter.def.json");
-        File log = new File(curaEngineDir, "engine.log");
-        /*if (log.exists() && !log.delete()) {
-            throw new RuntimeException("Unable to delete log-File");
-        }*/
 
+        File log = new File(curaEngineDir, "engine.log");
         pb.redirectOutput(ProcessBuilder.Redirect.appendTo(log));
         pb.redirectError(ProcessBuilder.Redirect.appendTo(log));
 
@@ -150,7 +173,7 @@ public class CuraEngine {
                     }
                 }
             } catch (Exception e) {
-                System.out.println("!!!!!!!!!!! " + e.getMessage());
+                System.err.println("CuraEngine error: " + e.getMessage());
             }
         }
 

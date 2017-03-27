@@ -56,36 +56,12 @@ public class FacetGroup {
         facet.color = this.color;
     }
 
-    public double lowestPosition() {
-        double min = Double.MAX_VALUE;
-
-        for (Facet f : facets) {
-            if (f.p1.z < min) {
-                min = f.p1.z;
-            }
-
-            if (f.p2.z < min) {
-                min = f.p2.z;
-            }
-
-            if (f.p3.z < min) {
-                min = f.p3.z;
-            }
-        }
-
-        return min;
-    }
-
-
-
 
     /**
-     * Calculates the corners of the given facets. This is done by firstly searching the
-     * edges that are only part of one facet and collecting the individual vertices. The
-     * chebychev center is the searched and the vertices are sorted by their polar angle
-     * with the center as the origin. As a last step fully included facets (all three
-     * are corners) are searched and removed. This process gets repeated until the facet
-     * count does not change
+     * Calculates the convex hull via the jarvis algorithm and then
+     * calculated the center of the hull
+     *
+     * Adapted from http://stackoverflow.com/a/10022243/3930389
      */
     public void calculateHull() {
         corners.clear();

@@ -1,28 +1,21 @@
 package de.ocarthon.ssg.gcode;
 
-import static de.ocarthon.ssg.util.FileUtil.write;
 import de.ocarthon.ssg.curaengine.config.Extruder;
 import de.ocarthon.ssg.curaengine.config.Printer;
 import de.ocarthon.ssg.math.MathUtil;
-import de.ocarthon.ssg.math.Vector;
 
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
 
+import static de.ocarthon.ssg.util.FileUtil.write;
+
 public class GCLayer {
     private List<GCInstruction> instructions = new ArrayList<>();
     private Extruder extruder;
     private double layerHeight;
     private double offset;
-
-    @Deprecated
-    public GCLayer(double offset, double layerHeight) {
-        this.offset = MathUtil.round(offset, 3);
-        this.layerHeight = layerHeight;
-
-    }
 
     public GCLayer(double offset, double layerHeight, Extruder extruder) {
         this.offset = MathUtil.round(offset, 3);
@@ -53,13 +46,13 @@ public class GCLayer {
             if (!firstG1 && instruction instanceof GCInstructions.G1) {
                 firstG1 = true;
 
-                write(out, "G1 F%f E%.4f%n", printer.retractionSpeed, eOffset + printer.retractionAmount);
+                write(out, "G1 F%f E%.4f%n", printer.retractionSpeed * 60, eOffset + printer.retractionAmount);
             }
 
             write(out, "%s%n", instruction.convertToGCode(printer, extruder));
         }
 
-        write(out, "G1 F%f E%.4f%n", printer.retractionSpeed, e);
+        write(out, "G1 F%f E%.4f%n", printer.retractionSpeed * 60, e);
 
         // Reset to travel speed
         write(out, "G0 F%f%n", printer.travelSpeed * 60);
@@ -114,24 +107,6 @@ public class GCLayer {
         }
 
         return e;
-    }
-
-    public double getLength() {
-        GCInstructions.G0 last = null;
-        double dst = 0;
-
-        for (GCInstruction instruction : instructions) {
-            if (instruction instanceof GCInstructions.G0) {
-                GCInstructions.G0 g = ((GCInstructions.G0) instruction);
-                if (g instanceof GCInstructions.G1 && last != null) {
-                    dst += Math.sqrt(Math.pow(last.x - g.x, 2) + Math.pow(last.y - g.y, 2));
-                }
-
-                last = g;
-            }
-        }
-
-        return dst;
     }
 
     public List<GCInstruction> getInstructions() {

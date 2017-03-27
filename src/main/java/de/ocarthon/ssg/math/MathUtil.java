@@ -9,8 +9,8 @@ public final class MathUtil {
     private MathUtil() {
     }
 
-    public static double round(double num, int pres) {
-        return Math.round(Math.pow(10, pres) * num) / Math.pow(10, pres);
+    public static double round(double num, int precision) {
+        return Math.round(Math.pow(10, precision) * num) / Math.pow(10, precision);
     }
 
     /**
@@ -88,7 +88,16 @@ public final class MathUtil {
         return t >= 0 && t <= 1;
     }
 
-    // http://math.stackexchange.com/questions/7931/point-below-a-plane/7934#7934
+    /**
+     * Checks whether the point P lies above the plane with the normal
+     * vector n that goes through the point P0.
+     *
+     * Adapted from http://math.stackexchange.com/questions/7931/point-below-a-plane/7934#7934
+     * @param p point in question
+     * @param p0 point on the plane
+     * @param n normal vector of plane
+     * @return whether the point is above the plane
+     */
     public static boolean isAbovePlane(Vector p, Vector p0, Vector n) {
         return n.dot(Vector.sub(p, p0)) > 0;
     }

@@ -2,7 +2,12 @@ package de.ocarthon.ssg;
 
 import de.ocarthon.ssg.formats.ObjectReader;
 import de.ocarthon.ssg.generator.FacetClustering;
-import de.ocarthon.ssg.math.*;
+import de.ocarthon.ssg.math.Facet;
+import de.ocarthon.ssg.math.FacetGroup;
+import de.ocarthon.ssg.math.MathUtil;
+import de.ocarthon.ssg.math.Matrix;
+import de.ocarthon.ssg.math.Object3D;
+import de.ocarthon.ssg.math.Vector;
 
 import javax.swing.*;
 import java.awt.*;
@@ -89,7 +94,7 @@ public class Test {
                     drawFacet(g2, f);
                 }
 
-                if (showRegions ||showHull || showCorners) {
+                if (showRegions || showHull || showCorners) {
                     for (int i = 0; i < facetGroups.size(); i++) {
 
                         FacetGroup fg = facetGroups.get(i);

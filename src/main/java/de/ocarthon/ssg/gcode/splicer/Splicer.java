@@ -1,22 +1,33 @@
-package de.ocarthon.ssg.gcode;
-
-import static de.ocarthon.ssg.gcode.GCUtil.E_PATTERN;
-import static de.ocarthon.ssg.gcode.GCUtil.Z_PATTERN;
-import static de.ocarthon.ssg.gcode.GCUtil.readDouble;
-import static de.ocarthon.ssg.util.FileUtil.write;
+package de.ocarthon.ssg.gcode.splicer;
 
 import de.ocarthon.ssg.curaengine.Cura;
 import de.ocarthon.ssg.curaengine.CuraEngine;
 import de.ocarthon.ssg.curaengine.SliceProgress;
 import de.ocarthon.ssg.curaengine.config.Extruder;
 import de.ocarthon.ssg.curaengine.config.Printer;
+import de.ocarthon.ssg.gcode.GCLayer;
+import de.ocarthon.ssg.gcode.GCObject;
+import de.ocarthon.ssg.gcode.GCUtil;
 import de.ocarthon.ssg.math.MathUtil;
 import de.ocarthon.ssg.math.Object3D;
 import de.ocarthon.ssg.math.Vector;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+
+import static de.ocarthon.ssg.gcode.GCUtil.E_PATTERN;
+import static de.ocarthon.ssg.gcode.GCUtil.Z_PATTERN;
+import static de.ocarthon.ssg.gcode.GCUtil.readDouble;
+import static de.ocarthon.ssg.util.FileUtil.write;
 
 public class Splicer {
 
@@ -43,8 +54,8 @@ public class Splicer {
         splice(sliceMain, sliceResult[0], supportMinHeight, obj, printer, file);
     }
 
-    public static void splice(SliceProgress sliceMain, SliceProgress sliceWSup, double supportMinHeight, GCObject obj, Printer printer, File file) throws IOException {
-        addLayersToGObj(obj, sliceMain, printer.getExtruder(0));
+    private static void splice(SliceProgress sliceMain, SliceProgress sliceWSup, double supportMinHeight, GCObject obj, Printer printer, File file) throws IOException {
+        addLayersToGObj(obj, sliceMain, printer, printer.getExtruder(0));
         addSupportLayersToGObj(obj, sliceWSup, supportMinHeight, printer, printer.getExtruder(printer.useDualPrint ? 1 : 0));
 
         splice(obj, printer, file);
@@ -65,7 +76,7 @@ public class Splicer {
         List<List<GCLayer>> layersByOffset = groupLayersByOffset(obj.getLayers());
 
 
-        double e = writeStartCommands(fos, printer);;
+        double e = writeStartCommands(fos, printer);
 
         Vector position = new Vector(0, 0, 0);
 
@@ -100,7 +111,7 @@ public class Splicer {
 
 
             if (!hasContent(inactExtLayers)) {
-                if (printer.usePrimeTower && printer.useDualPrint) {
+                if (printer.useDualPrint) {
                     // prime
                     e = primeTower.printLayer(fos, e, actExt);
                 }
@@ -140,13 +151,13 @@ public class Splicer {
         write(out, "G0 F%f X%.5f Y%.5f%n", printer.travelSpeed * 60, printer.nozzleSwitchPosition.x, printer.nozzleSwitchPosition.y);
 
         // Retract
-        write(out, "G1 F%f E%.5f%n", printer.nozzleSwitchRetractionSpeed, e - printer.nozzleSwitchRetractionAmount + printer.retractionAmount);
+        write(out, "G1 F%f E%.5f%n", printer.nozzleSwitchRetractionSpeed * 60, e - printer.nozzleSwitchRetractionAmount + printer.retractionAmount);
 
         // Switch extruder
         write(out, "T%d%n", inactExt.extruderNr);
         write(out, "G92 E0%n");
 
-        write(out, "G1 F%f E%.5f%n", printer.nozzleSwitchRetractionSpeed, printer.nozzleSwitchRetractionAmount - printer.retractionAmount);
+        write(out, "G1 F%f E%.5f%n", printer.nozzleSwitchRetractionSpeed * 60, printer.nozzleSwitchRetractionAmount - printer.retractionAmount);
 
         return primeTower.printLayer(out, printer.nozzleSwitchRetractionAmount - printer.retractionAmount, inactExt);
     }
@@ -187,7 +198,8 @@ public class Splicer {
             write(fos, "G92 E0%n");
             double e = initPrimeTower.printLayer(fos, 0, secExt);
 
-            write(fos, "G1 F%f E%.5f%n", printer.nozzleSwitchRetractionSpeed, e - printer.nozzleSwitchRetractionAmount + printer.retractionAmount);}
+            write(fos, "G1 F%f E%.5f%n", printer.nozzleSwitchRetractionSpeed * 60, e - printer.nozzleSwitchRetractionAmount + printer.retractionAmount);
+        }
 
         // Extruder 0
         write(fos, "T0%n");
@@ -231,7 +243,7 @@ public class Splicer {
         return layersByOffset;
     }
 
-    private static void addLayersToGObj(GCObject obj, SliceProgress slice, Extruder extruder) {
+    private static void addLayersToGObj(GCObject obj, SliceProgress slice, Printer printer, Extruder extruder) {
         LinkedList<Cura.GCodeLayer> layers = slice.getLayers();
         double lastE = 0;
 
@@ -248,7 +260,7 @@ public class Splicer {
 
             Collections.addAll(lineList, lines);
 
-            obj.newGLayer(lineList, z, extruder.layerHeight, lastE, extruder);
+            obj.newGLayer(lineList, z, printer.layerHeight, lastE, extruder);
 
             Iterator<String> iter = lineList.descendingIterator();
             while (iter.hasNext()) {
@@ -264,8 +276,7 @@ public class Splicer {
 
     private static void addSupportLayersToGObj(GCObject obj, SliceProgress slice, double supportMinHeight, Printer printer, Extruder ext) throws UnsupportedEncodingException {
         LinkedList<Cura.GCodeLayer> layers = slice.getLayers();
-        for (int i1 = 0; i1 < layers.size(); i1++) {
-            Cura.GCodeLayer layer = layers.get(i1);
+        for (Cura.GCodeLayer layer : layers) {
             String sLayer = layer.getData().toString("UTF-8");
             double z = readDouble(Z_PATTERN, sLayer);
             if (z < supportMinHeight) {
@@ -280,26 +291,6 @@ public class Splicer {
             for (int i = 0; i < lines.length; i++) {
                 if (lines[i].startsWith(";TYPE:SUPPORT")) {
                     support = 1;
-
-                    // Search last e
-                    /*for (int j = i - 1; j > 0; j--) {
-                        e = readDouble(E_PATTERN, lines[j]);
-                        if (e != -1) {
-                            break;
-                        }
-                    }
-
-                    if (e == -1) {
-                        String[] l2 = layers.get(i1 - 1).getData().toString("UTF-8").split("\n");
-                        for (int j = l2.length - 1; j > 0; j--) {
-                            e = readDouble(E_PATTERN, l2[j]);
-                            if (e != -1) {
-                                break;
-                            }
-                        }
-                    }*/
-
-                    // Search first e, as this will be a retraction move
 
                     supportLines.add(GCUtil.applyOffset(lines[i], ext));
                     supportLines.add(GCUtil.applyOffset(lines[i - 1], ext) + " Z" + z);
@@ -319,7 +310,7 @@ public class Splicer {
             }
 
 
-            obj.newGLayer(supportLines, z, ext.layerHeight, e, ext);
+            obj.newGLayer(supportLines, z, printer.layerHeight, e, ext);
         }
     }
 

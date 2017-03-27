@@ -4,7 +4,6 @@ import de.ocarthon.ssg.math.Facet;
 import de.ocarthon.ssg.math.Object3D;
 import de.ocarthon.ssg.math.Vector;
 
-import java.io.IOException;
 import java.io.InputStream;
 
 class STLBinaryFormat {

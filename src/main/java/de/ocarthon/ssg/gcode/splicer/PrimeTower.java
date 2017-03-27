@@ -1,6 +1,5 @@
-package de.ocarthon.ssg.gcode;
+package de.ocarthon.ssg.gcode.splicer;
 
-import static de.ocarthon.ssg.util.FileUtil.write;
 import de.ocarthon.ssg.curaengine.config.Extruder;
 import de.ocarthon.ssg.curaengine.config.Printer;
 import de.ocarthon.ssg.math.Vector;
@@ -8,7 +7,9 @@ import de.ocarthon.ssg.math.Vector;
 import java.io.IOException;
 import java.io.OutputStream;
 
-public class PrimeTower {
+import static de.ocarthon.ssg.util.FileUtil.write;
+
+class PrimeTower {
     private final Printer printer;
 
     private final Vector position;
@@ -16,7 +17,7 @@ public class PrimeTower {
 
     private int currentLayer = 1;
 
-    public PrimeTower(Printer printer, boolean initPrimeTower) {
+    PrimeTower(Printer printer, boolean initPrimeTower) {
         this.printer = printer;
 
         if (initPrimeTower) {
@@ -28,11 +29,7 @@ public class PrimeTower {
         }
     }
 
-    public double getCurrentHeight() {
-        return printer.layerHeight * (currentLayer + 1);
-    }
-
-    public double printLayer(OutputStream out, double e, Extruder ext) throws IOException {
+    double printLayer(OutputStream out, double e, Extruder ext) throws IOException {
         int lanes = (int) Math.floor(size / ext.nozzleSize);
         double materialPerLine = (size * printer.layerHeight * ext.nozzleSize * 4 * ext.materialFlow) / (100 * Math.PI * Math.pow(ext.materialDiameter, 2));
 
@@ -73,7 +70,7 @@ public class PrimeTower {
         }
 
         e -= printer.retractionAmount;
-        write(out, "G1 F%f E%.5f%n", printer.retractionSpeed, e);
+        write(out, "G1 F%f E%.5f%n", printer.retractionSpeed * 60, e);
         ext.isPrimed = true;
 
         // Reset to travel speed

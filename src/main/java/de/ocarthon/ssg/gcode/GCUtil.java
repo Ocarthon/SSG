@@ -10,12 +10,12 @@ import java.util.regex.Pattern;
 import static de.ocarthon.ssg.util.FileUtil.write;
 
 public class GCUtil {
-    static final Pattern X_PATTERN = Pattern.compile("X(\\d*\\.*\\d*)");
-    static final Pattern Y_PATTERN = Pattern.compile("Y(\\d*\\.*\\d*)");
-    static final Pattern Z_PATTERN = Pattern.compile("Z(\\d*\\.*\\d*)");
-    static final Pattern E_PATTERN = Pattern.compile("E(-*\\d*\\.*\\d*)");
+    public static final Pattern X_PATTERN = Pattern.compile("X(\\d*\\.*\\d*)");
+    public static final Pattern Y_PATTERN = Pattern.compile("Y(\\d*\\.*\\d*)");
+    public static final Pattern Z_PATTERN = Pattern.compile("Z(\\d*\\.*\\d*)");
+    public static final Pattern E_PATTERN = Pattern.compile("E(-*\\d*\\.*\\d*)");
 
-    static String applyOffset(String line, Extruder extruder) {
+    public static String applyOffset(String line, Extruder extruder) {
         if (!line.startsWith("G1") && !line.startsWith("G0") && !line.startsWith("G2")) {
             return line;
         }
@@ -33,7 +33,7 @@ public class GCUtil {
         return line;
     }
 
-    static double readDouble(Pattern pattern, String line) {
+    public static double readDouble(Pattern pattern, String line) {
         Matcher m = pattern.matcher(line);
         if (m.find()) {
             String s = m.group().trim().substring(1);
@@ -47,7 +47,7 @@ public class GCUtil {
         }
     }
 
-    static void writeComment(OutputStream out, String comment) throws IOException {
+    public static void writeComment(OutputStream out, String comment) throws IOException {
         write(out, "; %s%n", comment);
         write(out, "M117 %s%n", comment);
     }

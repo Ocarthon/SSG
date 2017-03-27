@@ -1,12 +1,20 @@
-package de.ocarthon.ssg.gcode;
+package de.ocarthon.ssg.gcode.splicer;
 
+import de.ocarthon.ssg.gcode.GCCLayer;
+import de.ocarthon.ssg.gcode.GCInstruction;
+import de.ocarthon.ssg.gcode.GCInstructions;
+import de.ocarthon.ssg.gcode.GCLayer;
+import de.ocarthon.ssg.gcode.GCUtil;
 import de.ocarthon.ssg.math.Vector;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 
-public class PathPlanning {
+class PathPlanning {
 
-    public static Vector searchBestPath(Vector beginning, List<GCLayer> layers) {
+    static Vector searchBestPath(Vector beginning, List<GCLayer> layers) {
         // Maps to store begin and end point of all layers
         HashMap<GCLayer, Vector> beginnings = new HashMap<>(layers.size());
         HashMap<GCLayer, Vector> endings = new HashMap<>(layers.size());
@@ -54,7 +62,7 @@ public class PathPlanning {
         if (layer instanceof GCCLayer) {
             GCCLayer gLayer = ((GCCLayer) layer);
 
-            for (String line : gLayer.gCode) {
+            for (String line : gLayer.getGCode()) {
                 if (!line.startsWith("G0") && !line.startsWith("G1")) {
                     continue;
                 }
@@ -63,7 +71,7 @@ public class PathPlanning {
                 break;
             }
 
-            Iterator<String> iter = gLayer.gCode.descendingIterator();
+            Iterator<String> iter = gLayer.getGCode().descendingIterator();
 
             while (iter.hasNext()) {
                 String line = iter.next();
@@ -89,7 +97,7 @@ public class PathPlanning {
                 break;
             }
 
-            for (int i = instructions.size() - 1; i >= instructions.size() - 10; i++) {
+            for (int i = instructions.size() - 1; i >= instructions.size() - 10; i--) {
                 GCInstruction instruction = instructions.get(i);
                 if (!(instruction instanceof GCInstructions.G0) || instruction instanceof GCInstructions.G2) {
                     continue;

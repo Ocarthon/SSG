@@ -3,7 +3,6 @@ package de.ocarthon.ssg;
 import de.ocarthon.ssg.curaengine.Cura;
 import de.ocarthon.ssg.curaengine.CuraEngine;
 import de.ocarthon.ssg.curaengine.SliceProgress;
-import de.ocarthon.ssg.curaengine.config.Extruder;
 import de.ocarthon.ssg.curaengine.config.Printer;
 import de.ocarthon.ssg.formats.ObjectReader;
 import de.ocarthon.ssg.math.Object3D;

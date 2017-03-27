@@ -1,7 +1,10 @@
-package de.ocarthon.ssg.gcode;
+package de.ocarthon.ssg.gcode.splicer;
 
 import de.ocarthon.ssg.curaengine.config.Extruder;
 import de.ocarthon.ssg.curaengine.config.Printer;
+import de.ocarthon.ssg.gcode.GCInstructions;
+import de.ocarthon.ssg.gcode.GCLayer;
+import de.ocarthon.ssg.gcode.GCObject;
 import de.ocarthon.ssg.math.Vector;
 import org.junit.Before;
 import org.junit.Test;
@@ -18,7 +21,7 @@ public class PathPlanningTest {
         obj = new GCObject();
 
         Printer printer = new Printer();
-        Extruder ext = new Extruder();
+        Extruder ext = new Extruder(0);
         printer.addExtruder(ext);
 
 
@@ -45,7 +48,5 @@ public class PathPlanningTest {
         Vector end2 = PathPlanning.searchBestPath(new Vector(0, 10, 0), obj.getLayers());
 
         assertEquals(end, end2);
-
     }
-
 }

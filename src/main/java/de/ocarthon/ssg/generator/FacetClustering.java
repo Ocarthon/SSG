@@ -5,7 +5,11 @@ import de.ocarthon.ssg.math.Facet;
 import de.ocarthon.ssg.math.FacetGroup;
 import de.ocarthon.ssg.math.Vector;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Random;
+import java.util.WeakHashMap;
 
 public class FacetClustering {
     // Default normal vector to prevent normal vector calculation
@@ -75,7 +79,6 @@ public class FacetClustering {
         }
 
 
-
         return true;
     }
 
@@ -89,7 +92,7 @@ public class FacetClustering {
         double minDist2 = Double.MAX_VALUE;
         List<FacetGroup> fgList = null;
 
-        while (tries ++ < MAX_TRIES) {
+        while (tries++ < MAX_TRIES) {
             List<FacetGroup> currentFg = clusterFacetsOnce(facets, clusterCount);
 
             double maxDist2 = 0;

@@ -2,11 +2,12 @@ package de.ocarthon.ssg.gcode;
 
 import de.ocarthon.ssg.curaengine.config.Extruder;
 import de.ocarthon.ssg.curaengine.config.Printer;
+import de.ocarthon.ssg.util.FileUtil;
 
+import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -35,7 +36,7 @@ public class GCObject {
         sort();
     }
 
-    public void sort() {
+    private void sort() {
         layers.sort((o1, o2) -> o1.getOffset() < o2.getOffset() ? -1 : o1.getOffset() == o2.getOffset() ? (o1.getClass() == GCLayer.class ? 1 : -1) : 1);
     }
 
@@ -47,27 +48,19 @@ public class GCObject {
         sort();
     }
 
-    public int layerCount() {
-        return layers.size();
-    }
-
     public List<GCLayer> getLayers() {
         return layers;
     }
 
-    public GCLayer getLayer(int n) {
-        return layers.get(n);
-    }
-
-    public void exportInstructions(OutputStream out, Printer printer) {
-        PrintWriter writer = new PrintWriter(out);
+    public void exportInstructions(OutputStream out, Printer printer) throws IOException {
         double e = 0;
         for (GCLayer layer : layers) {
             e = layer.calculateValues(printer, e);
             for (GCInstruction instruction : layer.getInstructions()) {
-                writer.format("%s%n", instruction.convertToGCode(printer, layer.getExtruder()));
+                FileUtil.write(out, "%s%n", instruction.convertToGCode(printer, layer.getExtruder()));
             }
         }
-        writer.flush();
+
+        out.flush();
     }
 }

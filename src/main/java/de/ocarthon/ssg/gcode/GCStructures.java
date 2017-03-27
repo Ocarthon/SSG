@@ -1,18 +1,8 @@
 package de.ocarthon.ssg.gcode;
 
-import de.ocarthon.ssg.curaengine.config.Extruder;
 import de.ocarthon.ssg.curaengine.config.Printer;
 
 public final class GCStructures {
-
-    public static void generateCircleTower(GCObject object, Printer printer, Extruder extruder,
-                                           double zMin, double zMax, double layerHeight,
-                                           double x, double y, double radius, int n) {
-        for (int i = 0; i < Math.floor((zMax - zMin) / layerHeight); i++) {
-            GCLayer layer = object.newLayer(zMin + (i + 1) * layerHeight, layerHeight, extruder);
-            circle(printer, layer, x, y, radius, n);
-        }
-    }
 
     public static void line(GCLayer layer, double x1, double y1, double x2, double y2) {
         layer.add(new GCInstructions.G0(x1, y1));

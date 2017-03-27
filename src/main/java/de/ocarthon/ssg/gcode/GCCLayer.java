@@ -1,19 +1,21 @@
 package de.ocarthon.ssg.gcode;
 
-import static de.ocarthon.ssg.gcode.GCUtil.E_PATTERN;
-import static de.ocarthon.ssg.gcode.GCUtil.readDouble;
-import static de.ocarthon.ssg.util.FileUtil.write;
 import de.ocarthon.ssg.curaengine.config.Extruder;
 import de.ocarthon.ssg.curaengine.config.Printer;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 
+import static de.ocarthon.ssg.gcode.GCUtil.E_PATTERN;
+import static de.ocarthon.ssg.gcode.GCUtil.readDouble;
+import static de.ocarthon.ssg.util.FileUtil.write;
+
 public class GCCLayer extends GCLayer {
-    LinkedList<String> gCode;
+    private LinkedList<String> gCode;
     double initialE = 0;
 
     GCCLayer(LinkedList<String> gCode, double offset, double layerHeight, Extruder extruder) {
@@ -49,7 +51,7 @@ public class GCCLayer extends GCLayer {
         for (String s : gCode) {
             if (!startsWRetracion && !firstG1 && (s.startsWith("G1") || s.startsWith("G2"))) {
                 firstG1 = true;
-                write(out, "G1 F%f E%.5f%n", printer.retractionSpeed, initialE);
+                write(out, "G1 F%f E%.5f%n", printer.retractionSpeed * 60, initialE);
             }
 
             write(out, "%s%n", s);
@@ -70,7 +72,7 @@ public class GCCLayer extends GCLayer {
         if (hasRetraction(false, printer)) {
             return endE;
         } else {
-            write(out, "G1 F%f E%.5f%n", printer.retractionSpeed, endE - printer.retractionAmount);
+            write(out, "G1 F%f E%.5f%n", printer.retractionSpeed * 60, endE - printer.retractionAmount);
 
             // Reset to travel speed
             write(out, "G0 F%f%n", printer.travelSpeed * 60);
@@ -101,8 +103,12 @@ public class GCCLayer extends GCLayer {
         return false;
     }
 
+    public LinkedList<String> getGCode() {
+        return gCode;
+    }
+
     @Override
     public List<GCInstruction> getInstructions() {
-        return null;
+        return Collections.emptyList();
     }
 }
