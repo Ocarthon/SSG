@@ -24,15 +24,15 @@ public class Test {
     private static float scale = 10;
     private static Vector zAxis = new Vector(0, 0, 1);
     private static List<FacetGroup> facetGroups = new ArrayList<>(2);
-    private static ArrayList<Vector> points = new ArrayList<>();
     private static List<Facet> supportFacets = new ArrayList<>();
     private static List<Facet> splitFacets = new ArrayList<>();
 
     private static JSlider angleSlider;
 
+    private static boolean showMesh = true;
     private static boolean showRegions = true;
-    private static boolean showHull = true;
-    private static boolean showCorners = false;
+    private static boolean showHull = false;
+    private static boolean showCenters = true;
     private static boolean showSupportFacets = false;
     private static boolean showSplitFacets = false;
 
@@ -88,16 +88,17 @@ public class Test {
                         Math.toRadians(zSlider.getValue()))
                         .multiply(Matrix.scaleMatrix(scale));
 
-                g2.setColor(Color.BLACK);
-                for (Facet f : object.facets) {
-                    f = rotation.transform(f);
-                    drawFacet(g2, f);
+                if (showMesh) {
+                    g2.setColor(Color.BLACK);
+                    for (Facet f : object.facets) {
+                        f = rotation.transform(f);
+                        drawFacet(g2, f);
+                    }
                 }
 
-                if (showRegions || showHull || showCorners) {
-                    for (int i = 0; i < facetGroups.size(); i++) {
+                if (showRegions || showHull || showCenters) {
+                    for (FacetGroup fg : facetGroups) {
 
-                        FacetGroup fg = facetGroups.get(i);
                         if (showRegions) {
                             g2.setColor(fg.color);
                             for (Facet f : fg.getFacets()) {
@@ -117,11 +118,8 @@ public class Test {
 
                         }
 
-                        if (showCorners) {
-                            for (Vector v : points) {
-                                v = rotation.transform(v);
-                                drawCircle(g2, v, 10, Color.YELLOW);
-                            }
+                        if (showCenters) {
+                            drawCircle(g2, rotation.transform(fg.center), 10, Color.BLACK);
                         }
                     }
                 }
@@ -265,23 +263,24 @@ public class Test {
 
         FacetGroup f = new FacetGroup(null);
         f.getFacets().addAll(splitFacets);
+        facetGroups.clear();
         facetGroups.add(f);
         System.out.println(facetGroups);
-        facetGroups = FacetClustering.cluster(facetGroups, 25);
+        facetGroups = FacetClustering.cluster(facetGroups, 30);
         System.out.println(facetGroups);
         //FacetClustering.cluster(splitFacets, 250);
         //facetGroups = FacetClustering.clusterFacets(splitFacets);
-
-        points.clear();
 
         for (FacetGroup fg : facetGroups) {
             fg.removeDoubles();
             fg.calculateHull();
         }
 
-        for (FacetGroup fg : facetGroups) {
-            points.addAll(fg.corners);
-            fg.color = Color.getHSBColor(random.nextFloat(), 1f, 1f);
+        float g = 1f / facetGroups.size();
+
+        for (int i = 0; i < facetGroups.size(); i++) {
+            FacetGroup fg = facetGroups.get(i);
+            fg.color = Color.getHSBColor(g * i, 1f, 1f);
         }
 
     }

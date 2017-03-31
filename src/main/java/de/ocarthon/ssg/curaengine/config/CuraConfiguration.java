@@ -86,6 +86,8 @@ public class CuraConfiguration {
         slb.addSettings(createSetting("infill_line_distance", String.valueOf((ext.lineWidth * 100) / printer.infillDensity)));
         slb.addSettings(createSetting("support_line_distance", String.valueOf((ext.lineWidth * 100) / printer.supportInfillDensity)));
 
+        slb.addSettings(createSetting("brim_line_count", String.valueOf(Math.floor(printer.brimWidth / ext.lineWidth))));
+
         return extConf.setSettings(slb);
     }
 

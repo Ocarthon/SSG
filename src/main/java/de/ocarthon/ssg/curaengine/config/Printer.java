@@ -135,11 +135,18 @@ public class Printer {
      * adhesion type. skirt / none
      */
     @CuraSetting(key = "adhesion_type")
-    public String adhesionType = "skirt";
+    public String adhesionType = "brim";
 
     @CuraSetting(key = "skirt_line_count")
     public int skirtLineCount = 4;
 
+    /**
+     * brim width in mm
+     */
+    public float brimWidth = 8f;
+
+    @CuraSetting(key = "brim_outside_only")
+    public boolean brimOutsideOnly = true;
 
     //
     // Support
@@ -159,7 +166,6 @@ public class Printer {
     @CuraSetting(key = "support_pattern")
     public String supportPattern = "zigzag";
 
-    // TODO never used?
     /**
      * Max overhang angle that the printer can achieve. At higher
      * angles a support structure will be used.

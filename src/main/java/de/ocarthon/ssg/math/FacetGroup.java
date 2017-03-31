@@ -104,15 +104,26 @@ public class FacetGroup {
             pOnHull = endpoint;
         }
 
+        MathUtil.HIGH_TOLERANCE = true;
+
         for (int i = corners.size() - 1; i > 1; i--) {
             Vector a = corners.get(i);
             Vector b = corners.get(i - 1);
             Vector c = corners.get(i - 2);
 
-            if (MathUtil.equals((b.y - a.y) * (c.x - b.y), (c.y - b.y) * (b.x - a.x))) {
+            /*if (MathUtil.equals((b.y - a.y) * (c.x - b.y), (c.y - b.y) * (b.x - a.x))) {
+                corners.remove(i - 1);
+            }*/
+
+            Vector ab = Vector.sub(b, a).norm();
+            Vector bc = Vector.sub(c, b).norm();
+
+            if (Vector.dst2(ab, bc) < 0.01) {
                 corners.remove(i - 1);
             }
         }
+
+        MathUtil.HIGH_TOLERANCE = false;
 
         findCenterOfCorners();
     }

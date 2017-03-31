@@ -35,7 +35,7 @@ public class SupportGenerator {
     private static final double minObjDistanceXY = 0.8;
 
     // Radius des Stammes
-    private static final double minPillarRadius = 5;
+    private static final double minPillarRadius = 3;
     private static final double pillarOptimisationStep = 0.1;
 
     // Breite des Stammes in Bahnen
@@ -59,7 +59,7 @@ public class SupportGenerator {
 
     private static final double minArea = 1;
 
-    private static final double maxDst = 40;
+    private static final double maxDst = 23;
 
 
     private static double supportMaxHeight = 0;

@@ -22,7 +22,7 @@ public class FacetClustering {
 
     private static final int MAX_TRIES = 10;
 
-    private static final int MAX_DEPTH = 500;
+    private static final int MAX_DEPTH = 100;
 
     private static final double CLUSTER_TOL = 1e-4;
 
